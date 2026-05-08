@@ -46,6 +46,8 @@
     nav.dock {
       position: fixed; left:0; right:0; bottom:0;
       height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+      padding-left: 24px;
+      padding-right: 24px;
       padding-bottom: env(safe-area-inset-bottom);
       background: var(--card);
       border-top: 1px solid var(--border);
@@ -54,17 +56,17 @@
       gap: 14px; z-index: 200;
     }
     .dock-item {
-      min-width: 98px; height: 44px; border-radius: 12px;
+      min-width: 92px; height: 44px; border-radius: 12px;
       padding: 0 12px;
       display: flex; flex-direction: row;
       align-items: center; justify-content: center;
       cursor: pointer; transition: background .2s, color .2s, border-color .2s;
-      color: var(--muted); gap: 7px;
+      color: var(--muted); gap: 0;
       border: 1px solid var(--border2);
       background: var(--bg2);
     }
-    .dock-item .icon  { font-size: .98rem; line-height: 1; }
-    .dock-item .label { font-size: .72rem; font-weight: 700; letter-spacing: .02em; text-transform: none; }
+    .dock-item .icon  { display:none; }
+    .dock-item .label { font-size: .8rem; font-weight: 700; letter-spacing: .02em; text-transform: none; }
     .dock-item:active { background: var(--bg3); }
     .dock-item.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
     .dock-divider { display:none; }
@@ -205,6 +207,12 @@
       color:var(--text); line-height:1.1;
     }
     .home-greeting-title span { color:var(--accent); }
+    .home-overview-inner{ min-height:100%; }
+    .home-gap{ width:100%; max-width:480px; height:15vh; min-height:78px; max-height:170px; }
+    .home-register-btn.home-bottom-cta{
+      margin-top:auto;
+      margin-bottom:calc(2px + env(safe-area-inset-bottom));
+    }
 
     .home-register-btn {
       width:100%; max-width:480px; margin-bottom:28px;
@@ -482,22 +490,57 @@
     .heatmap-legend span { font-size:.65rem; color:var(--muted); }
     .hml-cell { width:11px; height:11px; border-radius:2px; }
 
+    .streak-row{
+      width:calc(100% - 28px); max-width:480px;
+      margin-left:auto; margin-right:auto;
+      display:grid; grid-template-columns:1fr; gap:8px;
+      margin-bottom:8px;
+    }
+    .streak-head{
+      width:calc(100% - 28px); max-width:480px;
+      margin:2px auto 12px;
+    }
+    .streak-head .sh-title{
+      font-size:1.88rem; font-weight:800; letter-spacing:-.03em;
+      color:var(--text); line-height:1.05;
+    }
+    .streak-head .sh-sub{
+      font-size:.94rem; color:var(--muted); margin-top:6px;
+      margin-bottom:14px;
+    }
+    .streak-prompt{
+      width:calc(100% - 28px); max-width:480px;
+      margin-left:auto; margin-right:auto;
+      background:var(--card2); border:1px solid var(--border2);
+      border-radius:14px; padding:12px 14px; margin-bottom:10px;
+    }
+    .streak-prompt .sp-title{
+      font-size:.85rem; font-weight:800; color:var(--warning); margin-bottom:4px;
+    }
+    .streak-prompt .sp-body{
+      font-size:.8rem; line-height:1.35; color:var(--text);
+    }
     .streak-banner {
-      width:100%; max-width:480px;
       background:linear-gradient(135deg, rgba(251,191,36,.1) 0%, rgba(251,191,36,.04) 100%);
       border:1px solid rgba(251,191,36,.2); border-radius:16px;
       padding:14px 16px; display:flex; align-items:center; gap:12px;
-      margin-bottom:8px;
+      margin-bottom:0;
+      min-width:0;
     }
     .streak-banner .sb-icon { font-size:1.6rem; }
-    .streak-banner .sb-text { flex:1; }
+    .streak-banner .sb-text { flex:1; min-width:0; }
     .streak-banner .sb-n {
-      font-size:1.3rem; font-weight:800; color:var(--warning); line-height:1;
+      font-size:2rem; font-weight:800; color:var(--warning); line-height:1;
     }
-    .streak-banner .sb-l {
-      font-size:.7rem; color:var(--muted); margin-top:2px;
-      text-transform:uppercase; letter-spacing:.06em;
+    .streak-banner .sb-m {
+      font-size:.86rem; color:var(--muted);
+      margin-top:6px; line-height:1.3; white-space:normal; word-break:break-word;
     }
+    .streak-banner.focus {
+      background:linear-gradient(135deg, rgba(129,140,248,.1) 0%, rgba(129,140,248,.04) 100%);
+      border:1px solid rgba(129,140,248,.26);
+    }
+    .streak-banner.focus .sb-n { color:var(--accent); }
 
     .tod-card {
       background:var(--card); border:1px solid var(--border);
@@ -726,57 +769,31 @@
 
   <!-- ══ DOCK ══ -->
   <nav class="dock">
-    <div class="dock-item active" id="dockStats"   onclick="switchTab('stats')">    <span class="icon">📊</span><span class="label" data-i18n="dock.stats">Stats</span></div>
-    <div class="dock-item" id="dockHistory" onclick="switchTab('history')">  <span class="icon">🧾</span><span class="label" data-i18n="dock.history">Log</span></div>
-    <div class="dock-item" id="dockData"    onclick="switchTab('data')">     <span class="icon">⚙️</span><span class="label" data-i18n="dock.data">Settings</span></div>
+    <div class="dock-item active" id="dockHome"    onclick="switchTab('home')">    <span class="label" data-i18n="dock.home">Home</span></div>
+    <div class="dock-item" id="dockStats"   onclick="switchTab('stats')">    <span class="label" data-i18n="dock.stats">Stats</span></div>
+    <div class="dock-item" id="dockHistory" onclick="switchTab('history')">  <span class="label" data-i18n="dock.history">Log</span></div>
+    <div class="dock-item" id="dockData"    onclick="switchTab('data')">     <span class="label" data-i18n="dock.data">Settings</span></div>
   </nav>
 
   <div class="screens-wrap">
 
     <!-- ══ HOME ══ -->
-    <div class="screen" id="screenHome">
-      <div class="screen-inner">
-
+    <div class="screen active" id="screenHome">
+      <div class="screen-inner home-overview-inner">
         <div class="home-greeting">
-          <div class="home-greeting-sub" id="homeGreetingTime">Hoy</div>
-          <div class="home-greeting-title" id="homeGreetingTitle">Tu <span>consciencia</span><br>te acompaña.</div>
+          <div class="home-greeting-sub" id="homeGreetingTime">Today</div>
+          <div class="home-greeting-title" id="homeGreetingTitle">Your <span>awareness</span><br>is with you.</div>
         </div>
-
-        <button class="home-register-btn" onclick="openAddFlow()">
+        <div class="home-gap"></div>
+        <div id="homeStreakBanner" style="width:100%;max-width:480px;"></div>
+        <button class="home-register-btn home-bottom-cta" onclick="openAddFlow()">
           <div class="hrb-icon">＋</div>
           <div class="hrb-text">
-            <div class="hrb-title" data-i18n="home.newRecord">Nuevo registro</div>
-            <div class="hrb-sub"   data-i18n="home.newRecordSub">Registra una actividad ahora</div>
+            <div class="hrb-title" data-i18n="home.newRecord">New entry</div>
+            <div class="hrb-sub" data-i18n="home.newRecordSub">Log a coping mechanism now</div>
           </div>
           <span class="hrb-arrow">›</span>
         </button>
-
-        <div class="home-section-row">
-          <span class="home-section-title" data-i18n="home.activeGoals">Metas activas</span>
-          <button class="home-section-action" onclick="toggleAddGoalForm()" data-i18n="home.addGoal">＋ Agregar</button>
-        </div>
-
-        <!-- Form agregar meta -->
-        <div class="add-goal-form hidden" id="addGoalForm">
-          <p style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;" data-i18n="home.newGoal">Nueva meta</p>
-          <span class="label-text" data-i18n="home.substance">Actividad</span>
-          <select id="goalSubSelect" style="margin-bottom:14px;"></select>
-          <span class="label-text" data-i18n="home.timeUnit">Unidad de tiempo</span>
-          <div class="time-unit-selector" id="timeUnitSelector">
-            <div class="tus-btn active" data-unit="hours"  onclick="selectTimeUnit('hours')" data-i18n="home.hours">Horas</div>
-            <div class="tus-btn"        data-unit="days"   onclick="selectTimeUnit('days')"  data-i18n="home.days">Días</div>
-            <div class="tus-btn"        data-unit="weeks"  onclick="selectTimeUnit('weeks')" data-i18n="home.weeks">Semanas</div>
-          </div>
-          <span class="label-text" id="goalAmountLabel">Cantidad de horas</span>
-          <div class="goal-form-row">
-            <input type="number" id="goalAmountInput" min="1" max="9999" placeholder="24">
-            <button class="btn btn-primary" onclick="addGoal()" style="padding:12px 18px;" data-i18n="home.add">Agregar</button>
-          </div>
-        </div>
-
-        <div id="fitnessCard" style="width:100%;max-width:480px;"></div>
-        <div class="goal-detail-card hidden" id="goalDetailCard"></div>
-
       </div>
     </div>
 
@@ -784,21 +801,21 @@
     <div class="screen" id="screenAdd">
       <div class="screen-inner center">
         <div class="card" id="s1">
-          <p class="step-label" data-i18n="add.step1of5">Paso 1 de 5</p>
+          <p class="step-label" data-i18n="add.step1of5">Step 1 of 5</p>
           <div class="prog-wrap"><div class="prog-bar" style="width:20%"></div></div>
-          <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;" data-i18n="add.when">📅 ¿Cuándo?</p>
-          <span class="label-text" data-i18n="add.dateTime">Fecha y hora</span>
+          <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;" data-i18n="add.when">📅 When?</p>
+          <span class="label-text" data-i18n="add.dateTime">Date and time</span>
           <input type="datetime-local" id="fechaHora" style="margin-bottom:0;">
-          <div class="btn-row" style="margin-top:14px;"><button class="btn btn-primary btn-full" onclick="goStep(1,2)" data-i18n="add.next">Siguiente →</button></div>
+          <div class="btn-row" style="margin-top:14px;"><button class="btn btn-primary btn-full" onclick="goStep(1,2)" data-i18n="add.next">Next →</button></div>
         </div>
         <div class="card" id="s2" style="display:none">
-          <p class="step-label" data-i18n="add.step2of5">Paso 2 de 5</p>
+          <p class="step-label" data-i18n="add.step2of5">Step 2 of 5</p>
           <div class="prog-wrap"><div class="prog-bar" style="width:40%"></div></div>
           <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;" data-i18n="add.what">What coping mechanism did you use?</p>
           <div class="substance-grid" id="substanceGrid"></div>
           <div class="btn-row">
-            <button class="btn btn-secondary" onclick="goStep(2,1)" data-i18n="add.back">← Atrás</button>
-            <button class="btn btn-primary"   onclick="goStep(2,3)" data-i18n="add.next">Siguiente →</button>
+            <button class="btn btn-secondary" onclick="goStep(2,1)" data-i18n="add.back">← Back</button>
+            <button class="btn btn-primary"   onclick="goStep(2,3)" data-i18n="add.next">Next →</button>
           </div>
         </div>
         <div class="card" id="s3" style="display:none">
@@ -813,97 +830,79 @@
           </div>
         </div>
         <div class="card" id="s4" style="display:none">
-          <p class="step-label" data-i18n="add.step4of5">Paso 4 de 5</p>
+          <p class="step-label" data-i18n="add.step4of5">Step 4 of 5</p>
           <div class="prog-wrap"><div class="prog-bar" style="width:80%"></div></div>
-          <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;" data-i18n="add.cravingLevel">⚡ Intensidad del impulso</p>
+          <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;" data-i18n="add.cravingLevel">⚡ Urge intensity</p>
           <div class="craving-grid" id="cravingGrid"></div>
           <div class="craving-display mid" id="cravingDisplay">5</div>
           <div class="btn-row">
-            <button class="btn btn-secondary" onclick="goStep(4,3)" data-i18n="add.back">← Atrás</button>
-            <button class="btn btn-primary"   onclick="goStep(4,5)" data-i18n="add.next">Siguiente →</button>
+            <button class="btn btn-secondary" onclick="goStep(4,3)" data-i18n="add.back">← Back</button>
+            <button class="btn btn-primary"   onclick="goStep(4,5)" data-i18n="add.next">Next →</button>
           </div>
         </div>
         <div class="card" id="s5" style="display:none">
-          <p class="step-label" data-i18n="add.step5of5">Paso 5 de 5</p>
+          <p class="step-label" data-i18n="add.step5of5">Step 5 of 5</p>
           <div class="prog-wrap"><div class="prog-bar" style="width:100%"></div></div>
-          <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;" data-i18n="add.context">💬 Contexto</p>
-          <span class="label-text" data-i18n="add.whyWhere">¿Por qué o dónde?</span>
+          <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;" data-i18n="add.context">💬 Context</p>
+          <span class="label-text" data-i18n="add.whyWhere">Why or where?</span>
           <textarea id="motivo" placeholder="Stress, loneliness, triggers, conflict…" style="margin-bottom:0;"></textarea>
           <div class="btn-row" style="margin-top:10px;">
-            <button class="btn btn-secondary" onclick="goStep(5,4)" data-i18n="add.back">← Atrás</button>
-            <button class="btn btn-primary"   onclick="goStep(5,6)" data-i18n="add.review">Revisar ✓</button>
+            <button class="btn btn-secondary" onclick="goStep(5,4)" data-i18n="add.back">← Back</button>
+            <button class="btn btn-primary"   onclick="goStep(5,6)" data-i18n="add.review">Review ✓</button>
           </div>
         </div>
         <div class="card" id="s6" style="display:none">
-          <p style="font-size:1.05rem;font-weight:700;margin-bottom:4px;" data-i18n="add.summary">📝 Resumen</p>
-          <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px;" data-i18n="add.confirmBefore">Confirma antes de guardar</p>
+          <p style="font-size:1.05rem;font-weight:700;margin-bottom:4px;" data-i18n="add.summary">📝 Summary</p>
+          <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px;" data-i18n="add.confirmBefore">Confirm before saving</p>
           <div class="prog-wrap"><div class="prog-bar" style="width:100%"></div></div>
           <div id="summaryRows"></div>
           <div class="btn-row" style="margin-top:16px;">
-            <button class="btn btn-secondary" onclick="goStep(6,5)" data-i18n="add.edit">← Editar</button>
-            <button class="btn btn-primary"   onclick="guardar()"   data-i18n="add.save">💾 Guardar</button>
+            <button class="btn btn-secondary" onclick="goStep(6,5)" data-i18n="add.edit">← Edit</button>
+            <button class="btn btn-primary"   onclick="guardar()"   data-i18n="add.save">💾 Save</button>
           </div>
         </div>
         <div class="card" id="sSuccess" style="display:none;text-align:center;padding:30px 20px;">
           <span class="success-icon">✅</span>
-          <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:8px;" data-i18n="add.saved">¡Guardado!</h2>
-          <p style="color:var(--muted);font-size:.85rem;margin-bottom:20px;" data-i18n="add.savedSub">Registro almacenado en tu dispositivo.</p>
+          <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:8px;" data-i18n="add.saved">Saved!</h2>
+          <p style="color:var(--muted);font-size:.85rem;margin-bottom:20px;" data-i18n="add.savedSub">Entry stored on your device.</p>
           <div class="btn-row">
             <button class="btn btn-secondary" onclick="switchTab('stats')"    data-i18n="dock.stats">Stats</button>
-            <button class="btn btn-primary"   onclick="switchTab('history')" data-i18n="dock.history">Historial</button>
+            <button class="btn btn-primary"   onclick="switchTab('history')" data-i18n="dock.history">Log</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ══ HISTORIAL ══ -->
+    <!-- ══ HISTORY ══ -->
     <div class="screen" id="screenHistory">
       <div class="screen-inner">
-        <p class="page-title" data-i18n="history.title">Historial</p>
+        <p class="page-title" data-i18n="history.title">Log</p>
         <div class="filter-chips" id="filterChips"></div>
         <div class="history-list" id="historialList"></div>
       </div>
     </div>
 
     <!-- ══ STATS ══ -->
-    <div class="screen active" id="screenStats">
+    <div class="screen" id="screenStats">
       <div class="screen-inner">
-        <div class="home-greeting">
-          <div class="home-greeting-sub" id="greetingTime">Today</div>
-          <div class="home-greeting-title" id="greetingTitle">Your <span>awareness</span><br>is with you.</div>
-        </div>
-        <button class="home-register-btn" onclick="openAddFlow()">
-          <div class="hrb-icon">＋</div>
-          <div class="hrb-text">
-            <div class="hrb-title" data-i18n="home.newRecord">New entry</div>
-            <div class="hrb-sub" data-i18n="home.newRecordSub">Log a coping mechanism now</div>
-          </div>
-          <span class="hrb-arrow">›</span>
-        </button>
-        <div class="first-use-guide hidden" id="firstUseGuide"></div>
-        <p class="page-title" data-i18n="stats.title">Estadísticas</p>
+        <p class="page-title" data-i18n="stats.title">Statistics</p>
         <div class="stats-range-row" id="statsRangeRow">
           <div class="range-chip active" data-days="7"  onclick="setStatsRange(7)">7d</div>
           <div class="range-chip"        data-days="30" onclick="setStatsRange(30)">30d</div>
           <div class="range-chip"        data-days="90" onclick="setStatsRange(90)">90d</div>
-          <div class="range-chip"        data-days="0"  onclick="setStatsRange(0)" data-i18n="stats.all">Todo</div>
+          <div class="range-chip"        data-days="0"  onclick="setStatsRange(0)" data-i18n="stats.all">All</div>
         </div>
 
-        <div id="streakBanner"></div>
-
-        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.summary">Resumen</span><div class="ssh-line"></div></div>
+        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.summary">Summary</span><div class="ssh-line"></div></div>
         <div class="stat-grid" id="statGrid"></div>
 
-        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.focusTracker">Focus tracker</span><div class="ssh-line"></div></div>
-        <div class="focus-tracker-card" id="focusTrackerCard"></div>
-
-        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.heatmap">Mapa de actividad</span><div class="ssh-line"></div></div>
+        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.heatmap">Activity map</span><div class="ssh-line"></div></div>
         <div class="heatmap-card" id="heatmapCard"></div>
 
-        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.timeOfDay">Hora del día</span><div class="ssh-line"></div></div>
+        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.timeOfDay">Time of day</span><div class="ssh-line"></div></div>
         <div class="tod-card" id="todCard"></div>
 
-        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.trend">Tendencia temporal</span><div class="ssh-line"></div></div>
+        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.trend">Trend over time</span><div class="ssh-line"></div></div>
         <div class="stats-chart-card">
           <div class="chart-legend" id="chartLegend"></div>
           <div class="chart-scroll-wrap" id="chartScrollWrap">
@@ -911,23 +910,23 @@
           </div>
         </div>
 
-        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.bySubstance">Por actividad</span><div class="ssh-line"></div></div>
+        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.bySubstance">By mechanism</span><div class="ssh-line"></div></div>
         <div class="sub-stats-list" id="subStatsList"></div>
       </div>
     </div>
 
-    <!-- ══ DATOS ══ -->
+    <!-- ══ SETTINGS ══ -->
     <div class="screen" id="screenData">
       <div class="screen-inner">
-        <p class="page-title" data-i18n="data.title">Datos</p>
+        <p class="page-title" data-i18n="data.title">Settings</p>
 
-        <!-- ── Idioma ── -->
-        <p class="section-label" data-i18n="data.language">Idioma</p>
+        <!-- ── Language ── -->
+        <p class="section-label" data-i18n="data.language">Language</p>
         <div class="lang-toggle-card">
           <span class="lang-toggle-icon">🌐</span>
           <div class="lang-toggle-info">
-            <div class="lang-toggle-title" data-i18n="data.languageTitle">Idioma de la app</div>
-            <div class="lang-toggle-sub"   data-i18n="data.languageSub">Cambia entre español e inglés</div>
+            <div class="lang-toggle-title" data-i18n="data.languageTitle">App language</div>
+            <div class="lang-toggle-sub"   data-i18n="data.languageSub">Switch between English, Dutch, and Spanish</div>
           </div>
           <div class="lang-pill-wrap">
             <button class="lang-pill active" id="pillEn" onclick="setLang('en')">EN</button>
@@ -959,46 +958,46 @@
           </div>
         </div>
 
-        <!-- ── Exportar ── -->
-        <p class="section-label" style="margin-top:6px;" data-i18n="data.export">Exportar</p>
+        <!-- ── Export ── -->
+        <p class="section-label" style="margin-top:6px;" data-i18n="data.export">Export</p>
         <div class="data-action" onclick="exportJSON()">
           <span class="da-icon">📤</span>
           <div class="da-text">
-            <div class="da-title" data-i18n="data.exportJSON">Exportar JSON</div>
-            <div class="da-sub"   data-i18n="data.exportJSONSub">Backup completo de todos tus registros</div>
+            <div class="da-title" data-i18n="data.exportJSON">Export JSON</div>
+            <div class="da-sub"   data-i18n="data.exportJSONSub">Full backup of all your entries</div>
           </div>
           <span class="da-arrow">›</span>
         </div>
         <div class="data-action" onclick="exportCSV()">
           <span class="da-icon">📊</span>
           <div class="da-text">
-            <div class="da-title" data-i18n="data.exportCSV">Exportar CSV</div>
-            <div class="da-sub"   data-i18n="data.exportCSVSub">Compatible con Excel y Google Sheets</div>
+            <div class="da-title" data-i18n="data.exportCSV">Export CSV</div>
+            <div class="da-sub"   data-i18n="data.exportCSVSub">Compatible with Excel and Google Sheets</div>
           </div>
           <span class="da-arrow">›</span>
         </div>
 
-        <!-- ── Importar ── -->
-        <p class="section-label" style="margin-top:14px;" data-i18n="data.import">Importar</p>
+        <!-- ── Import ── -->
+        <p class="section-label" style="margin-top:14px;" data-i18n="data.import">Import</p>
         <div class="data-action" onclick="document.getElementById('importInput').click()">
           <span class="da-icon">📥</span>
           <div class="da-text">
-            <div class="da-title" data-i18n="data.importJSON">Importar JSON</div>
-            <div class="da-sub"   data-i18n="data.importJSONSub">Restaura un backup anterior</div>
+            <div class="da-title" data-i18n="data.importJSON">Import JSON</div>
+            <div class="da-sub"   data-i18n="data.importJSONSub">Restore a previous backup</div>
           </div>
           <span class="da-arrow">›</span>
         </div>
         <div class="data-action" onclick="openImportPaste()">
           <span class="da-icon">📋</span>
           <div class="da-text">
-            <div class="da-title" data-i18n="data.importPaste">Pegar JSON</div>
-            <div class="da-sub"   data-i18n="data.importPasteSub">Alternativa si el selector de archivos falla</div>
+            <div class="da-title" data-i18n="data.importPaste">Paste JSON</div>
+            <div class="da-sub"   data-i18n="data.importPasteSub">Use this if the file picker fails on iPhone</div>
           </div>
           <span class="da-arrow">›</span>
         </div>
         <input type="file" id="importInput" accept=".json,application/json" onchange="importJSON(event)">
         <div class="card hidden" id="importPasteCard" style="margin-top:8px;">
-          <p class="section-label" style="margin-bottom:10px;" data-i18n="data.importPasteLabel">Pega tu JSON aquí</p>
+          <p class="section-label" style="margin-bottom:10px;" data-i18n="data.importPasteLabel">Paste your JSON here</p>
           <textarea id="importPasteText" style="min-height:140px" placeholder='[{"dateTime":"2026-01-01T10:00","mechanism":"Self Sex","intensity":7}]'></textarea>
           <div class="btn-row" style="margin-top:6px;">
             <button class="btn btn-secondary" onclick="closeImportPaste()" data-i18n="data.cancel">Cancel</button>
@@ -1007,7 +1006,7 @@
         </div>
         <div style="width:100%;max-width:480px;margin-top:6px;">
           <p style="font-size:.72rem;color:var(--muted);text-align:center;line-height:1.5;" data-i18n="data.importWarning">
-            ⚠️ La importación reemplazará todos los registros actuales.
+            ⚠️ Import will replace all current entries.
           </p>
         </div>
       </div>
@@ -1050,6 +1049,7 @@ const I18N = {
     'home.dLbl':         'días',
     'home.hLbl':         'horas',
     'home.mLbl':         'min',
+    'home.greeting.night': 'Buenas noches 🌙',
     'home.greeting.morning': 'Buenos días ☀️',
     'home.greeting.afternoon': 'Buenas tardes 🌤️',
     'home.greeting.evening': 'Buenas noches 🌙',
@@ -1102,7 +1102,7 @@ const I18N = {
     'stats.timeOfDay':   'Hora del día',
     'stats.trend':       'Tendencia temporal',
     'stats.bySubstance': 'Por mecanismo',
-    'stats.focusTracker':'Enfoque sexual',
+    'stats.focusTracker':'Sin',
     'stats.focusSub':    'Seguimiento de mecanismos seleccionados',
     'stats.focusNoData': 'Sin registros en este enfoque',
     'stats.records':     'Registros',
@@ -1137,6 +1137,11 @@ const I18N = {
     'stats.firstUseBody': 'Usa el botón de Nuevo registro para guardar tu coping.',
     'stats.firstUseStepLog':'1. Toca "Nuevo registro" y elige el mecanismo.',
     'stats.firstUseStepSettings':'2. En Ajustes puedes cambiar la lista a tus opciones.',
+    'stats.activeStreakTitle':'ACTIVE STREAK',
+    'stats.activeStreakSub':'Days without entries',
+    'stats.overall':'Overall',
+    'stats.promptTitle':'Do not break your streak',
+    'stats.promptBody':'If you used a coping mechanism and do not log it now, your streak will reset. Make today count.',
 
     'data.title':         'Ajustes',
     'data.language':      'Idioma',
@@ -1222,6 +1227,7 @@ const I18N = {
     'home.dLbl':         'days',
     'home.hLbl':         'hours',
     'home.mLbl':         'min',
+    'home.greeting.night':     'Good night 🌙',
     'home.greeting.morning':   'Good morning ☀️',
     'home.greeting.afternoon': 'Good afternoon 🌤️',
     'home.greeting.evening':   'Good evening 🌙',
@@ -1274,7 +1280,7 @@ const I18N = {
     'stats.timeOfDay':   'Time of day',
     'stats.trend':       'Trend over time',
     'stats.bySubstance': 'By mechanism',
-    'stats.focusTracker':'Sexual focus tracker',
+    'stats.focusTracker':'Without',
     'stats.focusSub':    'Tracking selected mechanisms',
     'stats.focusNoData': 'No focus entries in this period',
     'stats.records':     'Entries',
@@ -1309,6 +1315,11 @@ const I18N = {
     'stats.firstUseBody':'Use the New entry button to log your coping behavior.',
     'stats.firstUseStepLog':'1. Tap "New entry" and choose a mechanism.',
     'stats.firstUseStepSettings':'2. In Settings you can replace the list with your own options.',
+    'stats.activeStreakTitle':'ACTIVE STREAK',
+    'stats.activeStreakSub':'Days without entries',
+    'stats.overall':'Overall',
+    'stats.promptTitle':'Do not break your streak',
+    'stats.promptBody':'If you used a coping mechanism and do not log it now, your streak will reset. Make today count.',
 
     'data.title':         'Settings',
     'data.language':      'Language',
@@ -1395,6 +1406,7 @@ I18N.nl = {
   'home.dLbl': 'dagen',
   'home.hLbl': 'uren',
   'home.mLbl': 'min',
+  'home.greeting.night': 'Goedenacht 🌙',
   'home.greeting.morning': 'Goedemorgen ☀️',
   'home.greeting.afternoon': 'Goedemiddag 🌤️',
   'home.greeting.evening': 'Goedenavond 🌙',
@@ -1439,7 +1451,7 @@ I18N.nl = {
   'stats.timeOfDay': 'Moment van de dag',
   'stats.trend': 'Trend over tijd',
   'stats.bySubstance': 'Per mechanisme',
-  'stats.focusTracker':'Seksuele focus-tracker',
+  'stats.focusTracker':'Zonder',
   'stats.focusSub': 'Tracking van geselecteerde mechanismen',
   'stats.focusNoData': 'Geen focus-invoer in deze periode',
   'stats.records': 'Invoer',
@@ -1474,6 +1486,11 @@ I18N.nl = {
   'stats.firstUseBody': 'Gebruik de knop Nieuwe invoer om je copinggedrag te loggen.',
   'stats.firstUseStepLog': '1. Tik op "Nieuwe invoer" en kies een mechanisme.',
   'stats.firstUseStepSettings': '2. In Instellingen kun je de lijst aanpassen naar je eigen opties.',
+  'stats.activeStreakTitle': 'ACTIVE STREAK',
+  'stats.activeStreakSub': 'Days without entries',
+  'stats.overall': 'Overall',
+  'stats.promptTitle': 'Verbreek je streak niet',
+  'stats.promptBody': 'Als je een copingmechanisme gebruikte en het nu niet logt, reset je streak. Maak vandaag tellend.',
   'data.title': 'Instellingen',
   'data.language': 'Taal',
   'data.languageTitle': 'App-taal',
@@ -1561,9 +1578,9 @@ function setLang(l) {
   saveSettings();
   applyI18n();
   refreshFocusTrackerSettingsUI();
+  renderHomeOverview();
   renderStats();
   if (currentTab === 'history') renderHistory();
-  if (currentTab === 'stats')   renderStats();
 }
 
 /* ══ SUBSTANCES ══ */
@@ -1917,13 +1934,14 @@ const store = {
 
 /* ══ NAV ══ */
 const TABS = {
+  home:    {screen:'screenHome',    dock:'dockHome'},
   add:     {screen:'screenAdd'},
   history: {screen:'screenHistory', dock:'dockHistory'},
   stats:   {screen:'screenStats',   dock:'dockStats'},
   data:    {screen:'screenData',    dock:'dockData'},
 };
-const TAB_ORDER = ['stats','history','data','add'];
-let currentTab  = 'stats';
+const TAB_ORDER = ['home','stats','history','data','add'];
+let currentTab  = 'home';
 
 function switchTab(tab) {
   if(tab===currentTab) return;
@@ -1948,6 +1966,7 @@ function switchTab(tab) {
     toDock.classList.add('active');
   }
   currentTab = tab;
+  if(tab==='home')    renderHomeOverview();
   if(tab==='add')     initAddFlow();
   if(tab==='history') renderHistory();
   if(tab==='stats')   renderStats();
@@ -2169,7 +2188,9 @@ function selectTimeUnit(unit){
 }
 
 function buildGoalSubSelect(){
-  document.getElementById('goalSubSelect').innerHTML=getActiveMechanisms().map(s=>
+  const sel=document.getElementById('goalSubSelect');
+  if(!sel) return;
+  sel.innerHTML=getActiveMechanisms().map(s=>
     `<option value="${s.name}">${s.emoji} ${s.name}</option>`
   ).join('');
 }
@@ -2263,11 +2284,14 @@ function drawFitnessRings(canvas, goalsData){
 }
 
 function renderHome(){
+  const gtEl=document.getElementById('greetingTime');
+  const gttEl=document.getElementById('greetingTitle');
+  if(!gtEl || !gttEl) return;
   goalTimers.forEach(clearInterval); goalTimers=[];
   const hr=new Date().getHours();
-  document.getElementById('greetingTime').textContent =
-    hr<12 ? t('home.greeting.morning') : hr<19 ? t('home.greeting.afternoon') : t('home.greeting.evening');
-  document.getElementById('greetingTitle').innerHTML = t('home.greeting.title');
+  gtEl.textContent =
+    hr<6 ? t('home.greeting.night') : hr<12 ? t('home.greeting.morning') : hr<19 ? t('home.greeting.afternoon') : t('home.greeting.evening');
+  gttEl.innerHTML = t('home.greeting.title');
 
   const goals=store.getGoals();
   const container=document.getElementById('fitnessCard');
@@ -2488,19 +2512,9 @@ function filterByRange(registros,days){
 }
 
 function renderStats(){
-  const hrNow=new Date().getHours();
-  const gt=document.getElementById('greetingTime');
-  const gtt=document.getElementById('greetingTitle');
-  if(gt&&gtt){
-    gt.textContent=hrNow<12?t('home.greeting.morning'):hrNow<19?t('home.greeting.afternoon'):t('home.greeting.evening');
-    gtt.innerHTML=t('home.greeting.title');
-  }
   const all=store.getAll();
   const filtered=filterByRange(all,statsRangeDays);
   const total=filtered.length;
-  renderFirstUseGuide(all.length===0);
-
-  renderStreak(all);
 
   const avgCraving=total?(filtered.reduce((a,r)=>a+parseFloat(r.craving),0)/total).toFixed(1):'—';
   let freq={};
@@ -2537,11 +2551,21 @@ function renderStats(){
     <div class="stat-tile"><div class="n">${avgPerDay}</div><div class="t">${t('stats.recPerDay')}</div></div>
     <div class="stat-tile wide"><div class="n" style="font-size:1.1rem">${masComSub?masComSub.emoji+' '+masComun:'—'}</div><div class="t">${t('stats.mostCommon')}</div></div>`;
 
-  renderFocusTracker(filtered);
   renderHeatmap(filtered);
   renderTimeOfDay(filtered);
   drawLineChart(filtered);
   renderSubStats(filtered,freq);
+}
+
+function renderHomeOverview(){
+  const hrNow=new Date().getHours();
+  const gt=document.getElementById('homeGreetingTime');
+  const gtt=document.getElementById('homeGreetingTitle');
+  if(gt&&gtt){
+    gt.textContent=hrNow<6?t('home.greeting.night'):hrNow<12?t('home.greeting.morning'):hrNow<19?t('home.greeting.afternoon'):t('home.greeting.evening');
+    gtt.innerHTML=t('home.greeting.title');
+  }
+  renderStreak(store.getAll(),'homeStreakBanner');
 }
 
 function renderFirstUseGuide(isFirstUse){
@@ -2561,33 +2585,19 @@ function renderFirstUseGuide(isFirstUse){
   `;
 }
 
-function renderFocusTracker(filtered){
-  const card=document.getElementById('focusTrackerCard');
-  if(!card) return;
-  const selected=getFocusSubs();
-  const counts=Object.fromEntries(selected.map(name=>[name,0]));
-  const focus=filtered.filter(r=>{
-    const names=getRecordMechanismNames(r);
-    let hit=false;
-    names.forEach(n=>{
-      if(Object.prototype.hasOwnProperty.call(counts,n)){
-        counts[n]=(counts[n]||0)+1;
-        hit=true;
-      }
-    });
-    return hit;
-  });
-  const avg=focus.length?(focus.reduce((a,r)=>a+parseFloat(r.craving),0)/focus.length).toFixed(1):'—';
-  const noDataMsg=focus.length?'':`<div class="focus-meta" style="margin-top:8px">${t('stats.focusNoData')}</div>`;
-  const focusTiles=selected.map(name=>{
-    const sub=subByName(name);
-    return `<div class="focus-tile"><div class="n">${counts[name]||0}</div><div class="t">${sub.emoji} ${name}</div></div>`;
-  }).join('');
-  card.innerHTML=`
-    <div class="focus-sub">${t('stats.focusSub')}</div>
-    <div class="focus-grid">${focusTiles}</div>
-    <div class="focus-meta">${focus.length} ${pluralLabel('label.entry', focus.length)} • ${t('stats.avgCraving')}: ${avg}</div>
-    ${noDataMsg}`;
+function streakDaysFromRecords(records){
+  const datesWithReg=new Set(records.map(recordDateKey).filter(Boolean));
+  if(!datesWithReg.size) return null;
+  let streak=0;
+  const d=new Date(); d.setHours(0,0,0,0);
+  while(true){
+    const key=localDateKey(d);
+    if(datesWithReg.has(key)) break;
+    streak++;
+    d.setDate(d.getDate()-1);
+    if(streak>3650) break;
+  }
+  return streak;
 }
 
 function localDateKey(dateObj){
@@ -2606,27 +2616,71 @@ function recordDateKey(record){
   return localDateKey(dt);
 }
 
-function renderStreak(all){
-  const banner=document.getElementById('streakBanner');
-  if(!all.length){ banner.innerHTML=''; return; }
-  const datesWithReg=new Set(all.map(recordDateKey).filter(Boolean));
-  if(!datesWithReg.size){ banner.innerHTML=''; return; }
-  let streak=0;
-  const d=new Date(); d.setHours(0,0,0,0);
-  while(true){
-    const key=localDateKey(d);
-    if(datesWithReg.has(key)) break;
-    streak++;
-    d.setDate(d.getDate()-1);
-    if(streak>3650) break;
+function renderStreak(all,targetId='streakBanner'){
+  const banner=document.getElementById(targetId);
+  if(!banner) return;
+  const safeAll=Array.isArray(all)?all:[];
+  if(!safeAll.length){
+    banner.innerHTML=`
+      <div class="streak-head">
+        <div class="sh-title">${t('stats.activeStreakTitle')}</div>
+        <div class="sh-sub">${t('stats.activeStreakSub')}</div>
+      </div>
+      <div class="streak-prompt">
+        <div class="sp-title">⚠️ ${t('stats.promptTitle')}</div>
+        <div class="sp-body">${t('stats.promptBody')}</div>
+      </div>
+      <div class="streak-row">
+        <div class="streak-banner">
+          <span class="sb-icon">🔥</span>
+          <div class="sb-text">
+            <div class="sb-n">0 ${pluralLabel('label.day', 0)}</div>
+            <div class="sb-m">${t('stats.overall')}</div>
+          </div>
+        </div>
+        <div class="streak-banner focus">
+          <span class="sb-icon">🎯</span>
+          <div class="sb-text">
+            <div class="sb-n">0 ${pluralLabel('label.day', 0)}</div>
+            <div class="sb-m">${t('stats.focusTracker')}</div>
+          </div>
+        </div>
+      </div>`;
+    return;
   }
-  if(streak===0){ banner.innerHTML=''; return; }
+  const overallStreak=streakDaysFromRecords(safeAll);
+  const safeOverall=overallStreak===null?0:overallStreak;
+  const selected=getFocusSubs();
+  const focusRecords=safeAll.filter(r=>recordHasAnyMechanism(r,selected));
+  const focusStreak=streakDaysFromRecords(focusRecords);
+  const safeFocus=focusStreak===null?0:focusStreak;
+  const focusNames=selected.map(name=>{
+    const sub=subByName(name);
+    return `${sub.emoji} ${name}`;
+  }).join(' • ');
   banner.innerHTML=`
-    <div class="streak-banner">
-      <span class="sb-icon">🔥</span>
-      <div class="sb-text">
-        <div class="sb-n">${streak} ${pluralLabel('label.day', streak)}</div>
-        <div class="sb-l">${t('stats.streak')}</div>
+    <div class="streak-head">
+      <div class="sh-title">${t('stats.activeStreakTitle')}</div>
+      <div class="sh-sub">${t('stats.activeStreakSub')}</div>
+    </div>
+    <div class="streak-prompt">
+      <div class="sp-title">⚠️ ${t('stats.promptTitle')}</div>
+      <div class="sp-body">${t('stats.promptBody')}</div>
+    </div>
+    <div class="streak-row">
+      <div class="streak-banner">
+        <span class="sb-icon">🔥</span>
+        <div class="sb-text">
+          <div class="sb-n">${safeOverall} ${pluralLabel('label.day', safeOverall)}</div>
+          <div class="sb-m">${t('stats.overall')}</div>
+        </div>
+      </div>
+      <div class="streak-banner focus">
+        <span class="sb-icon">🎯</span>
+        <div class="sb-text">
+          <div class="sb-n">${safeFocus} ${pluralLabel('label.day', safeFocus)}</div>
+          <div class="sb-m">${t('stats.focusTracker')}: ${focusNames}</div>
+        </div>
       </div>
     </div>`;
 }
@@ -3188,6 +3242,7 @@ window.addEventListener('load',()=>{
   refreshMechanismsEditor();
   applyI18n();
   refreshFocusTrackerSettingsUI();
+  renderHomeOverview();
   renderStats();
 });
 </script>
