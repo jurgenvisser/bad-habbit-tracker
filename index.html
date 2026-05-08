@@ -27,16 +27,24 @@
       --warning:    #fbbf24;
       --danger:     #f87171;
       --nav-h:      72px;
+      --page-pad:   clamp(14px, 5vw, 28px);
+      --dock-pad:   clamp(12px, 4vw, 24px);
+      --dock-gap:   clamp(7px, 2.6vw, 14px);
+      --content-max: 480px;
+      --streak-max: 430px;
     }
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html, body { height:100%; min-height:100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
       background: var(--bg);
       color: var(--text);
+      min-height: 100svh;
       min-height: 100dvh;
       overflow: hidden;
     }
     #app {
+      height: 100svh;
       height: 100dvh;
       padding-top: env(safe-area-inset-top);
       padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
@@ -46,18 +54,19 @@
     nav.dock {
       position: fixed; left:0; right:0; bottom:0;
       height: calc(var(--nav-h) + env(safe-area-inset-bottom));
-      padding-left: 24px;
-      padding-right: 24px;
+      padding-left: max(var(--dock-pad), env(safe-area-inset-left));
+      padding-right: max(var(--dock-pad), env(safe-area-inset-right));
       padding-bottom: env(safe-area-inset-bottom);
       background: var(--card);
       border-top: 1px solid var(--border);
       display: flex; flex-direction: row;
       align-items: center; justify-content: center;
-      gap: 14px; z-index: 200;
+      gap: var(--dock-gap); z-index: 200;
     }
     .dock-item {
-      min-width: 92px; height: 44px; border-radius: 12px;
-      padding: 0 12px;
+      flex:1 1 0; min-width:0; max-width:124px;
+      height: 44px; border-radius: 12px;
+      padding: 0 8px;
       display: flex; flex-direction: row;
       align-items: center; justify-content: center;
       cursor: pointer; transition: background .2s, color .2s, border-color .2s;
@@ -66,7 +75,10 @@
       background: var(--bg2);
     }
     .dock-item .icon  { display:none; }
-    .dock-item .label { font-size: .8rem; font-weight: 700; letter-spacing: .02em; text-transform: none; }
+    .dock-item .label {
+      min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+      font-size: .8rem; font-weight: 700; letter-spacing:0; text-transform: none;
+    }
     .dock-item:active { background: var(--bg3); }
     .dock-item.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
     .dock-divider { display:none; }
@@ -80,7 +92,8 @@
     }
     .screen.active { display:block; }
     .screen-inner {
-      min-height:100%; padding:24px 16px 48px;
+      min-height:100%;
+      padding:clamp(18px, 4svh, 28px) var(--page-pad) 48px;
       display:flex; flex-direction:column; align-items:center;
     }
     .screen-inner.center { justify-content:center; }
@@ -97,13 +110,13 @@
     .page-title {
       font-size:1.35rem; font-weight:800; letter-spacing:-.03em;
       color:var(--text); margin-bottom:20px;
-      width:100%; max-width:480px;
+      width:100%; max-width:var(--content-max);
       display:flex; align-items:center; gap:8px;
     }
     .section-label {
       font-size:.68rem; font-weight:700; color:var(--muted);
       text-transform:uppercase; letter-spacing:.08em;
-      margin-bottom:10px; width:100%; max-width:480px;
+      margin-bottom:10px; width:100%; max-width:var(--content-max);
     }
     .label-text {
       display:block; font-size:.75rem; font-weight:600;
@@ -115,7 +128,7 @@
     .card {
       background:var(--card); border:1px solid var(--border);
       border-radius:20px; padding:20px;
-      width:100%; max-width:480px;
+      width:100%; max-width:var(--content-max);
     }
     .card+.card { margin-top:10px; }
 
@@ -197,25 +210,46 @@
     /* ════════════════════════════
        HOME
     ════════════════════════════ */
-    .home-greeting { width:100%; max-width:480px; margin-bottom:24px; }
+    .home-greeting { width:100%; max-width:var(--content-max); margin-bottom:24px; }
     .home-greeting-sub {
       font-size:.68rem; font-weight:700; color:var(--muted);
       text-transform:uppercase; letter-spacing:.12em; margin-bottom:5px;
     }
     .home-greeting-title {
-      font-size:1.65rem; font-weight:800; letter-spacing:-.03em;
+      font-size:1.65rem; font-weight:800; letter-spacing:0;
       color:var(--text); line-height:1.1;
     }
     .home-greeting-title span { color:var(--accent); }
     .home-overview-inner{ min-height:100%; }
-    .home-gap{ width:100%; max-width:480px; height:15vh; min-height:78px; max-height:170px; }
+    .home-streak-wrap{
+      width:100%;
+      max-width:var(--content-max);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+    }
+    .home-gap{
+      width:100%;
+      max-width:var(--content-max);
+      height:clamp(44px, 8svh, 104px);
+    }
     .home-register-btn.home-bottom-cta{
       margin-top:auto;
       margin-bottom:calc(2px + env(safe-area-inset-bottom));
     }
 
+    /* iPhone Safari/PWA viewport quirks */
+    @supports (-webkit-touch-callout: none) {
+      #app {
+        min-height: -webkit-fill-available;
+      }
+      .home-register-btn.home-bottom-cta{
+        margin-bottom:calc(8px + env(safe-area-inset-bottom));
+      }
+    }
+
     .home-register-btn {
-      width:100%; max-width:480px; margin-bottom:28px;
+      width:100%; max-width:var(--content-max); margin-bottom:28px;
       background:linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
       border:none; border-radius:18px; padding:16px 20px;
       display:flex; align-items:center; gap:14px;
@@ -491,17 +525,17 @@
     .hml-cell { width:11px; height:11px; border-radius:2px; }
 
     .streak-row{
-      width:calc(100% - 28px); max-width:480px;
+      width:min(100%, var(--streak-max)); max-width:100%;
       margin-left:auto; margin-right:auto;
       display:grid; grid-template-columns:1fr; gap:8px;
       margin-bottom:8px;
     }
     .streak-head{
-      width:calc(100% - 28px); max-width:480px;
+      width:min(100%, var(--streak-max)); max-width:100%;
       margin:2px auto 12px;
     }
     .streak-head .sh-title{
-      font-size:1.88rem; font-weight:800; letter-spacing:-.03em;
+      font-size:1.88rem; font-weight:800; letter-spacing:0;
       color:var(--text); line-height:1.05;
     }
     .streak-head .sh-sub{
@@ -509,7 +543,7 @@
       margin-bottom:14px;
     }
     .streak-prompt{
-      width:calc(100% - 28px); max-width:480px;
+      width:min(100%, var(--streak-max)); max-width:100%;
       margin-left:auto; margin-right:auto;
       background:var(--card2); border:1px solid var(--border2);
       border-radius:14px; padding:12px 14px; margin-bottom:10px;
@@ -534,7 +568,7 @@
     }
     .streak-banner .sb-m {
       font-size:.86rem; color:var(--muted);
-      margin-top:6px; line-height:1.3; white-space:normal; word-break:break-word;
+      margin-top:6px; line-height:1.3; white-space:normal; word-break:normal; overflow-wrap:anywhere;
     }
     .streak-banner.focus {
       background:linear-gradient(135deg, rgba(129,140,248,.1) 0%, rgba(129,140,248,.04) 100%);
@@ -761,6 +795,47 @@
       background: var(--card);
       border-top: 1px solid var(--border);
     }
+    @media (max-width: 380px) {
+      :root {
+        --page-pad: 12px;
+        --dock-pad: 10px;
+        --dock-gap: 6px;
+        --nav-h: 68px;
+      }
+      .dock-item {
+        height:42px;
+        border-radius:11px;
+        padding:0 5px;
+      }
+      .dock-item .label { font-size:.74rem; }
+      .screen-inner {
+        padding-top:16px;
+        padding-left:var(--page-pad);
+        padding-right:var(--page-pad);
+      }
+      .home-greeting-title { font-size:1.5rem; }
+      .home-gap { height:44px; }
+      .streak-head .sh-title { font-size:1.58rem; }
+      .streak-head .sh-sub { font-size:.86rem; }
+      .streak-prompt { padding:11px 12px; }
+      .streak-banner {
+        padding:12px;
+        gap:10px;
+      }
+      .streak-banner .sb-icon { font-size:1.35rem; }
+      .streak-banner .sb-n { font-size:1.7rem; }
+      .streak-banner .sb-m { font-size:.78rem; }
+      .home-register-btn {
+        padding:14px 16px;
+        gap:12px;
+      }
+      .home-register-btn .hrb-icon {
+        width:38px;
+        height:38px;
+      }
+      .home-register-btn .hrb-title { font-size:.9rem; }
+      .home-register-btn .hrb-sub { font-size:.68rem; }
+    }
     ::-webkit-scrollbar { width:0; background:transparent; }
   </style>
 </head>
@@ -785,7 +860,7 @@
           <div class="home-greeting-title" id="homeGreetingTitle">Your <span>awareness</span><br>is with you.</div>
         </div>
         <div class="home-gap"></div>
-        <div id="homeStreakBanner" style="width:100%;max-width:480px;"></div>
+        <div id="homeStreakBanner" class="home-streak-wrap"></div>
         <button class="home-register-btn home-bottom-cta" onclick="openAddFlow()">
           <div class="hrb-icon">＋</div>
           <div class="hrb-text">
