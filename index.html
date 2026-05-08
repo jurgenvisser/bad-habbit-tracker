@@ -1,0 +1,3195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Dopamine Log">
+  <meta name="theme-color" content="#080810">
+  <title>DopamineLog</title>
+  <style>
+    :root {
+      --accent:     #818cf8;
+      --accent2:    #a78bfa;
+      --accent-dim: rgba(129,140,248,0.10);
+      --bg:         #080810;
+      --bg2:        #0e0e18;
+      --bg3:        #14141f;
+      --card:       #111119;
+      --card2:      #181822;
+      --text:       #eeeef8;
+      --muted:      #585870;
+      --muted2:     #38384e;
+      --border:     #1a1a28;
+      --border2:    #242434;
+      --success:    #34d399;
+      --warning:    #fbbf24;
+      --danger:     #f87171;
+      --nav-h:      72px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      overflow: hidden;
+    }
+    #app {
+      height: 100dvh;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+    }
+
+    /* ── DOCK ── */
+    nav.dock {
+      position: fixed; left:0; right:0; bottom:0;
+      height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+      padding-bottom: env(safe-area-inset-bottom);
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      display: flex; flex-direction: row;
+      align-items: center; justify-content: center;
+      gap: 14px; z-index: 200;
+    }
+    .dock-item {
+      min-width: 98px; height: 44px; border-radius: 12px;
+      padding: 0 12px;
+      display: flex; flex-direction: row;
+      align-items: center; justify-content: center;
+      cursor: pointer; transition: background .2s, color .2s, border-color .2s;
+      color: var(--muted); gap: 7px;
+      border: 1px solid var(--border2);
+      background: var(--bg2);
+    }
+    .dock-item .icon  { font-size: .98rem; line-height: 1; }
+    .dock-item .label { font-size: .72rem; font-weight: 700; letter-spacing: .02em; text-transform: none; }
+    .dock-item:active { background: var(--bg3); }
+    .dock-item.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+    .dock-divider { display:none; }
+
+    /* ── SCREENS ── */
+    .screens-wrap { height:100%; position:relative; overflow:hidden; }
+    .screen {
+      position:absolute; inset:0;
+      overflow-y:auto; overflow-x:hidden;
+      display:none; -webkit-overflow-scrolling:touch;
+    }
+    .screen.active { display:block; }
+    .screen-inner {
+      min-height:100%; padding:24px 16px 48px;
+      display:flex; flex-direction:column; align-items:center;
+    }
+    .screen-inner.center { justify-content:center; }
+    .screen.slide-in-right  { animation:siR .26s cubic-bezier(.4,0,.2,1) forwards; }
+    .screen.slide-in-left   { animation:siL .26s cubic-bezier(.4,0,.2,1) forwards; }
+    .screen.slide-out-right { animation:soR .26s cubic-bezier(.4,0,.2,1) forwards; }
+    .screen.slide-out-left  { animation:soL .26s cubic-bezier(.4,0,.2,1) forwards; }
+    @keyframes siR  { from{transform:translateX(36px);opacity:0} to{transform:none;opacity:1} }
+    @keyframes siL  { from{transform:translateX(-36px);opacity:0} to{transform:none;opacity:1} }
+    @keyframes soR  { from{transform:none;opacity:1} to{transform:translateX(36px);opacity:0} }
+    @keyframes soL  { from{transform:none;opacity:1} to{transform:translateX(-36px);opacity:0} }
+
+    /* ── TYPOGRAPHY ── */
+    .page-title {
+      font-size:1.35rem; font-weight:800; letter-spacing:-.03em;
+      color:var(--text); margin-bottom:20px;
+      width:100%; max-width:480px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .section-label {
+      font-size:.68rem; font-weight:700; color:var(--muted);
+      text-transform:uppercase; letter-spacing:.08em;
+      margin-bottom:10px; width:100%; max-width:480px;
+    }
+    .label-text {
+      display:block; font-size:.75rem; font-weight:600;
+      color:var(--muted); text-transform:uppercase;
+      letter-spacing:.07em; margin-bottom:8px;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:20px; padding:20px;
+      width:100%; max-width:480px;
+    }
+    .card+.card { margin-top:10px; }
+
+    /* ── FORMS ── */
+    input,select,textarea {
+      width:100%; padding:12px 14px;
+      background:var(--bg2); border:1px solid var(--border2);
+      border-radius:12px; color:var(--text);
+      font-size:.95rem; font-family:inherit; margin-bottom:14px;
+      transition:border-color .2s, box-shadow .2s;
+      -webkit-appearance:none;
+    }
+    input:focus,textarea:focus,select:focus {
+      outline:none; border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(129,140,248,.12);
+    }
+    textarea { resize:vertical; min-height:80px; }
+    select { cursor:pointer; }
+    select option { background:var(--bg2); }
+
+    /* ── SUBSTANCE PICKER ── */
+    .substance-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; margin-bottom:14px; }
+    .sub-option {
+      background:var(--bg2); border:1.5px solid var(--border2);
+      border-radius:14px; padding:12px 10px; cursor:pointer;
+      transition:all .18s; display:flex; flex-direction:column;
+      align-items:center; gap:4px; text-align:center;
+    }
+    .sub-option .sub-emoji { font-size:1.5rem; line-height:1; }
+    .sub-option .sub-name  { font-size:.76rem; font-weight:600; color:var(--muted); }
+    .sub-option .sub-unit  { font-size:.65rem; color:var(--muted); opacity:.6; }
+    .sub-option.selected   { border-color:var(--accent); background:var(--accent-dim); }
+    .sub-option.selected .sub-name { color:var(--accent); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:7px; padding:12px 18px;
+      font-size:.9rem; font-weight:600; font-family:inherit;
+      border-radius:13px; border:none; cursor:pointer;
+      transition:opacity .15s, transform .1s;
+    }
+    .btn:active { transform:scale(.97); opacity:.85; }
+    .btn-primary      { background:var(--accent); color:#080810; }
+    .btn-secondary    { background:var(--bg3); color:var(--text); border:1px solid var(--border2); }
+    .btn-ghost        { background:transparent; color:var(--muted); border:1px solid var(--border2); }
+    .btn-danger-soft  { background:rgba(248,113,113,.08); color:var(--danger); border:1px solid rgba(248,113,113,.18); }
+    .btn-success-soft { background:rgba(52,211,153,.08); color:var(--success); border:1px solid rgba(52,211,153,.18); }
+    .btn-full { width:100%; }
+    .btn-row  { display:flex; gap:8px; margin-top:4px; }
+    .btn-row .btn { flex:1; }
+
+    /* ── PROGRESS ── */
+    .prog-wrap { height:2px; background:var(--border2); border-radius:2px; margin-bottom:22px; }
+    .prog-bar  { height:100%; background:var(--accent); border-radius:2px; transition:width .4s cubic-bezier(.4,0,.2,1); }
+    .step-label { font-size:.68rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:5px; }
+
+    /* ── CRAVING ── */
+    .craving-grid {
+      display:grid; grid-template-columns:repeat(11,1fr);
+      gap:4px; margin:8px 0 10px;
+    }
+    .craving-btn {
+      aspect-ratio:1; border-radius:8px;
+      background:var(--bg2); border:1px solid var(--border2);
+      font-size:.78rem; font-weight:700;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; transition:all .15s; color:var(--muted);
+    }
+    .craving-btn.active { border-color:transparent; color:#080810; transform:scale(1.12); }
+    .craving-btn.active.low  { background:var(--success); box-shadow:0 4px 12px rgba(52,211,153,.25); }
+    .craving-btn.active.mid  { background:var(--warning); box-shadow:0 4px 12px rgba(251,191,36,.25); }
+    .craving-btn.active.high { background:var(--danger);  box-shadow:0 4px 12px rgba(248,113,113,.25); }
+    .craving-display { font-size:2.4rem; font-weight:800; text-align:center; margin:2px 0 12px; line-height:1; }
+    .craving-display.low  { color:var(--success); }
+    .craving-display.mid  { color:var(--warning); }
+    .craving-display.high { color:var(--danger); }
+
+    /* ════════════════════════════
+       HOME
+    ════════════════════════════ */
+    .home-greeting { width:100%; max-width:480px; margin-bottom:24px; }
+    .home-greeting-sub {
+      font-size:.68rem; font-weight:700; color:var(--muted);
+      text-transform:uppercase; letter-spacing:.12em; margin-bottom:5px;
+    }
+    .home-greeting-title {
+      font-size:1.65rem; font-weight:800; letter-spacing:-.03em;
+      color:var(--text); line-height:1.1;
+    }
+    .home-greeting-title span { color:var(--accent); }
+
+    .home-register-btn {
+      width:100%; max-width:480px; margin-bottom:28px;
+      background:linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      border:none; border-radius:18px; padding:16px 20px;
+      display:flex; align-items:center; gap:14px;
+      cursor:pointer; transition:opacity .15s, transform .1s;
+      box-shadow: 0 8px 24px rgba(129,140,248,.22);
+    }
+    .home-register-btn:active { opacity:.88; transform:scale(.98); }
+    .home-register-btn .hrb-icon {
+      width:40px; height:40px; border-radius:12px;
+      background:rgba(255,255,255,.18);
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.3rem; flex-shrink:0;
+    }
+    .home-register-btn .hrb-text { flex:1; text-align:left; }
+    .home-register-btn .hrb-title { font-size:.95rem; font-weight:700; color:#080810; line-height:1; }
+    .home-register-btn .hrb-sub   { font-size:.72rem; color:rgba(8,8,16,.6); margin-top:2px; }
+    .home-register-btn .hrb-arrow { font-size:1.1rem; color:rgba(8,8,16,.5); }
+    .first-use-guide {
+      width:100%; max-width:480px; margin:-12px 0 20px;
+      background:var(--card2); border:1px solid var(--border2);
+      border-radius:16px; padding:14px;
+    }
+    .first-use-guide.hidden { display:none; }
+    .first-use-guide .fug-title {
+      font-size:.82rem; font-weight:800; color:var(--text);
+      margin-bottom:6px;
+    }
+    .first-use-guide .fug-body {
+      font-size:.77rem; color:var(--muted); margin-bottom:8px;
+      line-height:1.4;
+    }
+    .first-use-guide .fug-step {
+      font-size:.77rem; color:var(--text); margin-top:4px;
+    }
+
+    .home-section-row {
+      width:100%; max-width:480px;
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:12px;
+    }
+    .home-section-title {
+      font-size:.68rem; font-weight:700; color:var(--muted);
+      text-transform:uppercase; letter-spacing:.09em;
+    }
+    .home-section-action {
+      font-size:.72rem; font-weight:600; color:var(--accent);
+      cursor:pointer; background:none; border:none; padding:0;
+    }
+
+    /* Fitness rings card */
+    .fitness-card {
+      width:100%; max-width:480px;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:22px; padding:20px; margin-bottom:10px;
+      display:flex; gap:20px; align-items:center;
+    }
+    .fitness-card.empty-card {
+      flex-direction:column; align-items:center;
+      padding:32px 20px; gap:10px;
+    }
+    .rings-canvas-wrap { flex-shrink:0; position:relative; }
+    .rings-canvas-wrap canvas { display:block; }
+    .rings-legend { flex:1; display:flex; flex-direction:column; gap:10px; min-width:0; }
+    .ring-legend-item {
+      display:flex; align-items:center; gap:10px;
+      cursor:pointer; border-radius:10px; padding:2px 0;
+      transition:opacity .15s;
+    }
+    .ring-legend-item:active { opacity:.7; }
+    .ring-legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .ring-legend-info { flex:1; min-width:0; }
+    .ring-legend-name {
+      font-size:.82rem; font-weight:700; color:var(--text);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .ring-legend-time { font-size:.68rem; color:var(--muted); margin-top:1px; font-variant-numeric:tabular-nums; }
+    .ring-legend-pct { font-size:.78rem; font-weight:800; font-variant-numeric:tabular-nums; flex-shrink:0; }
+
+    /* Goal detail card */
+    .goal-detail-card {
+      width:100%; max-width:480px;
+      background:var(--card2); border:1px solid var(--border2);
+      border-radius:20px; padding:18px; margin-bottom:10px;
+    }
+    .goal-detail-card.hidden { display:none; }
+    .gdc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .gdc-sub    { display:flex; align-items:center; gap:9px; }
+    .gdc-emoji  {
+      width:34px; height:34px; border-radius:10px;
+      display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+    }
+    .gdc-name { font-size:.92rem; font-weight:700; }
+    .gdc-delete {
+      width:28px; height:28px; border-radius:9px;
+      background:transparent; border:1px solid var(--border2);
+      color:var(--muted); font-size:.75rem;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; transition:all .15s;
+    }
+    .gdc-delete:active { background:rgba(248,113,113,.12); color:var(--danger); }
+
+    .gdc-time-row { display:flex; gap:6px; margin-bottom:14px; }
+    .gdc-time-unit {
+      flex:1; background:var(--bg2); border-radius:11px;
+      padding:10px 4px; text-align:center;
+    }
+    .gdc-time-unit .num {
+      font-size:1.5rem; font-weight:800; color:var(--text);
+      line-height:1; font-variant-numeric:tabular-nums;
+    }
+    .gdc-time-unit .lbl {
+      font-size:.55rem; color:var(--muted); text-transform:uppercase;
+      letter-spacing:.07em; margin-top:3px;
+    }
+
+    .gdc-bar-bg   { height:4px; background:var(--border2); border-radius:3px; overflow:hidden; }
+    .gdc-bar-fill { height:100%; border-radius:3px; transition:width .6s cubic-bezier(.4,0,.2,1); }
+    .gdc-meta {
+      display:flex; justify-content:space-between;
+      font-size:.67rem; color:var(--muted); margin-top:5px;
+    }
+    .gdc-done-badge {
+      display:inline-flex; align-items:center; gap:5px;
+      font-size:.7rem; font-weight:700; color:var(--success);
+      background:rgba(52,211,153,.1); border:1px solid rgba(52,211,153,.2);
+      border-radius:20px; padding:3px 9px; margin-top:10px;
+    }
+
+    .add-goal-trigger {
+      width:100%; max-width:480px; background:transparent;
+      border:1px dashed var(--border2); border-radius:16px; padding:13px;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      cursor:pointer; color:var(--muted); font-size:.82rem; font-weight:600;
+      transition:all .15s; margin-bottom:8px;
+    }
+    .add-goal-trigger:active { background:var(--bg3); }
+    .add-goal-form {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:20px; padding:18px;
+      width:100%; max-width:480px; margin-bottom:10px;
+    }
+    .add-goal-form.hidden { display:none; }
+    .goal-form-row { display:flex; gap:8px; align-items:flex-end; }
+    .goal-form-row select { margin-bottom:0; flex:1; }
+    .goal-form-row input  { margin-bottom:0; width:80px; text-align:center; }
+
+    .time-unit-selector {
+      display:flex; gap:6px; margin-bottom:14px;
+    }
+    .tus-btn {
+      flex:1; padding:8px 4px; border-radius:10px;
+      font-size:.76rem; font-weight:700; text-align:center;
+      background:var(--bg2); border:1px solid var(--border2);
+      color:var(--muted); cursor:pointer; transition:all .15s;
+    }
+    .tus-btn.active { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
+
+    /* ── HISTORIAL ── */
+    .filter-chips {
+      display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;
+      margin-bottom:14px; width:100%; max-width:480px; scrollbar-width:none;
+    }
+    .filter-chips::-webkit-scrollbar { display:none; }
+    .chip {
+      flex-shrink:0; padding:5px 12px; border-radius:20px;
+      font-size:.76rem; font-weight:600;
+      background:var(--card); border:1px solid var(--border2);
+      color:var(--muted); cursor:pointer; transition:all .15s;
+    }
+    .chip.active { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
+    .history-list { width:100%; max-width:480px; display:flex; flex-direction:column; gap:8px; }
+    .history-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:14px; position:relative; }
+    .h-top { display:flex; align-items:center; gap:8px; padding-right:34px; margin-bottom:4px; }
+    .h-emoji     { font-size:1.2rem; }
+    .h-substance { font-weight:700; font-size:.95rem; }
+    .h-amount    { color:var(--muted); font-size:.85rem; }
+    .h-date      { font-size:.72rem; color:var(--muted); margin-bottom:6px; }
+    .h-craving-row { display:flex; align-items:center; gap:6px; }
+    .h-craving-dots { display:flex; gap:3px; }
+    .h-craving-dot { width:5px; height:5px; border-radius:50%; background:var(--border2); }
+    .h-craving-dot.on-low  { background:var(--success); }
+    .h-craving-dot.on-mid  { background:var(--warning); }
+    .h-craving-dot.on-high { background:var(--danger); }
+    .h-motivo { font-size:.78rem; color:var(--muted); margin-top:5px; font-style:italic; }
+    .h-delete {
+      position:absolute; top:12px; right:12px;
+      width:27px; height:27px; border-radius:8px;
+      background:transparent; border:1px solid var(--border2);
+      color:var(--muted); font-size:.8rem;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; transition:all .15s;
+    }
+    .h-delete:active { background:rgba(248,113,113,.12); color:var(--danger); }
+
+    /* ════════════════════════════
+       STATS
+    ════════════════════════════ */
+    .stats-range-row {
+      display:flex; gap:6px; width:100%; max-width:480px; margin-bottom:20px;
+    }
+    .range-chip {
+      flex:1; padding:8px 4px; border-radius:12px;
+      font-size:.75rem; font-weight:700; text-align:center;
+      background:var(--card); border:1px solid var(--border2);
+      color:var(--muted); cursor:pointer; transition:all .15s;
+    }
+    .range-chip.active { background:var(--accent); border-color:var(--accent); color:#080810; }
+
+    .stats-section-header {
+      width:100%; max-width:480px;
+      display:flex; align-items:center; gap:10px;
+      margin:20px 0 12px;
+    }
+    .stats-section-header .ssh-line  { flex:1; height:1px; background:var(--border); }
+    .stats-section-header .ssh-label {
+      font-size:.68rem; font-weight:800; color:var(--muted);
+      text-transform:uppercase; letter-spacing:.08em; white-space:nowrap;
+    }
+
+    .stat-grid {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:8px; margin-bottom:4px; width:100%; max-width:480px;
+    }
+    .stat-tile {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:16px; padding:16px 12px; text-align:center;
+      position:relative; overflow:hidden;
+    }
+    .stat-tile::before {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(135deg, rgba(129,140,248,.04) 0%, transparent 60%);
+      pointer-events:none;
+    }
+    .stat-tile .n { font-size:1.8rem; font-weight:800; color:var(--accent); line-height:1; margin-bottom:5px; }
+    .stat-tile .t { font-size:.67rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+    .stat-tile.wide { grid-column:1/-1; }
+    .stat-tile .trend {
+      font-size:.68rem; font-weight:700; margin-top:4px;
+      display:inline-flex; align-items:center; gap:3px;
+    }
+    .trend-up   { color:var(--danger); }
+    .trend-down { color:var(--success); }
+    .trend-flat { color:var(--muted); }
+
+    .heatmap-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:18px; padding:16px 14px;
+      width:100%; max-width:480px; margin-bottom:4px;
+    }
+    .heatmap-title { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:12px; }
+    .heatmap-scroll { overflow-x:auto; scrollbar-width:none; }
+    .heatmap-scroll::-webkit-scrollbar { display:none; }
+    .heatmap-grid { display:flex; gap:3px; }
+    .heatmap-col  { display:flex; flex-direction:column; gap:3px; }
+    .heatmap-cell {
+      width:13px; height:13px; border-radius:3px;
+      background:var(--border2); transition:transform .1s;
+    }
+    .heatmap-cell:active { transform:scale(1.3); }
+    .heatmap-cell.l1 { background:rgba(129,140,248,.25); }
+    .heatmap-cell.l2 { background:rgba(129,140,248,.5);  }
+    .heatmap-cell.l3 { background:rgba(129,140,248,.75); }
+    .heatmap-cell.l4 { background:rgba(129,140,248,1);   }
+    .heatmap-days {
+      display:flex; gap:3px; margin-top:5px;
+      font-size:.58rem; color:var(--muted);
+    }
+    .heatmap-legend {
+      display:flex; align-items:center; gap:4px;
+      margin-top:8px; justify-content:flex-end;
+    }
+    .heatmap-legend span { font-size:.65rem; color:var(--muted); }
+    .hml-cell { width:11px; height:11px; border-radius:2px; }
+
+    .streak-banner {
+      width:100%; max-width:480px;
+      background:linear-gradient(135deg, rgba(251,191,36,.1) 0%, rgba(251,191,36,.04) 100%);
+      border:1px solid rgba(251,191,36,.2); border-radius:16px;
+      padding:14px 16px; display:flex; align-items:center; gap:12px;
+      margin-bottom:8px;
+    }
+    .streak-banner .sb-icon { font-size:1.6rem; }
+    .streak-banner .sb-text { flex:1; }
+    .streak-banner .sb-n {
+      font-size:1.3rem; font-weight:800; color:var(--warning); line-height:1;
+    }
+    .streak-banner .sb-l {
+      font-size:.7rem; color:var(--muted); margin-top:2px;
+      text-transform:uppercase; letter-spacing:.06em;
+    }
+
+    .tod-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:18px; padding:16px 14px;
+      width:100%; max-width:480px; margin-bottom:4px;
+    }
+    .tod-bars { display:flex; align-items:flex-end; gap:3px; height:60px; margin-top:8px; }
+    .tod-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; }
+    .tod-bar {
+      width:100%; border-radius:3px 3px 0 0;
+      background:var(--accent-dim); border:1px solid rgba(129,140,248,.15);
+      transition:height .4s cubic-bezier(.4,0,.2,1);
+    }
+    .tod-bar.active { background:var(--accent); border-color:var(--accent); }
+    .tod-label { font-size:.5rem; color:var(--muted); white-space:nowrap; }
+
+    .stats-chart-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:18px; padding:16px 14px;
+      width:100%; max-width:480px; margin-bottom:4px;
+    }
+    .focus-tracker-card {
+      width:100%; max-width:480px;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:18px; padding:15px 14px; margin-bottom:4px;
+    }
+    .focus-sub { font-size:.72rem; color:var(--muted); margin-bottom:12px; }
+    .focus-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+    .focus-tile { background:var(--bg2); border-radius:11px; padding:10px 9px; text-align:center; }
+    .focus-tile .n { font-size:1.25rem; font-weight:800; line-height:1; margin-bottom:4px; }
+    .focus-tile .t { font-size:.66rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+    .focus-meta { font-size:.76rem; color:var(--muted); }
+    .chart-legend { display:flex; flex-wrap:wrap; gap:8px 12px; margin-bottom:10px; }
+    .legend-item  { display:flex; align-items:center; gap:5px; font-size:.7rem; font-weight:600; color:var(--muted); }
+    .legend-dot   { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .chart-scroll-wrap {
+      overflow-x:auto; overflow-y:hidden;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:none; border-radius:8px; touch-action:pan-x;
+    }
+    .chart-scroll-wrap::-webkit-scrollbar { display:none; }
+    #lineChart { display:block; border-radius:8px; }
+
+    .sub-stats-list {
+      width:100%; max-width:480px;
+      display:flex; flex-direction:column; gap:8px; margin-bottom:4px;
+    }
+    .sub-stat-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:18px; overflow:hidden; transition:border-color .2s;
+    }
+    .sub-stat-card.expanded { border-color:rgba(129,140,248,.22); }
+    .sub-stat-tap { padding:14px 15px; cursor:pointer; user-select:none; -webkit-user-select:none; }
+    .sub-stat-header { display:flex; align-items:center; gap:9px; margin-bottom:11px; }
+    .sub-stat-emoji {
+      width:36px; height:36px; border-radius:10px;
+      background:var(--accent-dim);
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.2rem; flex-shrink:0;
+    }
+    .sub-stat-name  { font-weight:700; font-size:.93rem; }
+    .sub-stat-count { font-size:.72rem; color:var(--muted); margin-top:1px; }
+    .sub-stat-chevron {
+      margin-left:auto; font-size:.75rem; color:var(--muted);
+      transition:transform .25s cubic-bezier(.4,0,.2,1); flex-shrink:0;
+    }
+    .sub-stat-card.expanded .sub-stat-chevron { transform:rotate(180deg); }
+    .sub-stat-metrics { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
+    .sub-metric { background:var(--bg2); border-radius:10px; padding:9px 6px; text-align:center; }
+    .sub-metric .sm-n { font-size:1.05rem; font-weight:800; color:var(--text); line-height:1; margin-bottom:3px; }
+    .sub-metric .sm-l { font-size:.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; line-height:1.2; }
+    .sub-freq-bar-bg   { height:3px; background:var(--border2); border-radius:2px; overflow:hidden; margin-top:10px; }
+    .sub-freq-bar-fill { height:100%; border-radius:2px; transition:width .6s cubic-bezier(.4,0,.2,1); }
+    .sub-stat-detail { display:none; padding:0 15px 15px; border-top:1px solid var(--border); }
+    .sub-stat-card.expanded .sub-stat-detail { display:block; }
+    .detail-divider {
+      font-size:.65rem; font-weight:800; color:var(--muted);
+      text-transform:uppercase; letter-spacing:.08em;
+      margin:13px 0 8px; display:flex; align-items:center; gap:8px;
+    }
+    .detail-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+    .detail-chart-wrap {
+      overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;
+      scrollbar-width:none; border-radius:7px; touch-action:pan-x;
+    }
+    .detail-chart-wrap::-webkit-scrollbar { display:none; }
+    .craving-dist { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
+    .craving-dist-item { border-radius:10px; padding:9px 6px; text-align:center; }
+    .craving-dist-item.low  { background:rgba(52,211,153,.08); }
+    .craving-dist-item.mid  { background:rgba(251,191,36,.08); }
+    .craving-dist-item.high { background:rgba(248,113,113,.08); }
+    .craving-dist-item .cdn { font-size:1.05rem; font-weight:800; line-height:1; margin-bottom:3px; }
+    .craving-dist-item.low  .cdn { color:var(--success); }
+    .craving-dist-item.mid  .cdn { color:var(--warning); }
+    .craving-dist-item.high .cdn { color:var(--danger); }
+    .craving-dist-item .cdl { font-size:.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+    .detail-reg-list { display:flex; flex-direction:column; gap:5px; }
+    .detail-reg-item {
+      display:flex; align-items:center; gap:8px;
+      background:var(--bg2); border-radius:10px; padding:8px 10px;
+    }
+    .detail-reg-dot    { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .detail-reg-date   { font-size:.72rem; color:var(--muted); flex:1; }
+    .detail-reg-amount { font-size:.8rem; font-weight:700; color:var(--text); }
+    .detail-reg-craving { font-size:.72rem; font-weight:600; margin-left:5px; }
+
+    /* ── DATOS ── */
+    .data-action {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:16px; padding:15px 17px;
+      width:100%; max-width:480px;
+      display:flex; align-items:center; gap:13px;
+      cursor:pointer; transition:background .15s; margin-bottom:8px;
+    }
+    .data-action:active { background:var(--bg3); }
+    .data-action .da-icon  { font-size:1.5rem; }
+    .data-action .da-text .da-title { font-weight:700; font-size:.92rem; }
+    .data-action .da-text .da-sub   { font-size:.75rem; color:var(--muted); margin-top:2px; }
+    .da-arrow { margin-left:auto; color:var(--muted); font-size:.95rem; }
+    #importInput { display:none; }
+    .hidden { display:none !important; }
+    .mech-editor {
+      width:100%; max-width:480px;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:16px; padding:14px; margin-bottom:8px;
+    }
+    .mech-help { font-size:.72rem; color:var(--muted); margin-bottom:8px; line-height:1.4; }
+
+    /* ── LANGUAGE TOGGLE ── */
+    .lang-toggle-card {
+      width:100%; max-width:480px;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:20px; padding:18px 20px;
+      margin-bottom:8px;
+      display:flex; align-items:center; gap:14px;
+    }
+    .lang-toggle-icon { font-size:1.5rem; flex-shrink:0; }
+    .lang-toggle-info { flex:1; }
+    .lang-toggle-title { font-weight:700; font-size:.92rem; margin-bottom:2px; }
+    .lang-toggle-sub   { font-size:.75rem; color:var(--muted); }
+    .lang-pill-wrap { display:flex; background:var(--bg2); border-radius:11px; padding:3px; gap:2px; }
+    .lang-pill {
+      padding:6px 14px; border-radius:9px;
+      font-size:.78rem; font-weight:700;
+      cursor:pointer; transition:all .18s;
+      color:var(--muted); border:none; background:transparent;
+    }
+    .lang-pill.active { background:var(--accent); color:#080810; }
+
+    /* ── SUMMARY ── */
+    .summary-row { display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); font-size:.87rem; }
+    .summary-row:last-child { border-bottom:none; }
+    .summary-key { color:var(--muted); }
+    .summary-val { font-weight:600; text-align:right; max-width:60%; }
+
+    /* ── SUCCESS ── */
+    .success-icon { font-size:3.2rem; display:block; margin:0 auto 14px; text-align:center; animation:pop .4s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes pop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+
+    /* ── EMPTY ── */
+    .empty { text-align:center; padding:40px 20px; color:var(--muted); }
+    .empty .e-icon { font-size:2.2rem; margin-bottom:10px; opacity:.3; }
+    .empty p { font-size:.85rem; }
+
+    /* ── TOAST ── */
+    .toast {
+      position:fixed; bottom:30px; left:50%;
+      transform:translateX(-50%) translateY(20px);
+      background:var(--card2); border:1px solid var(--border2);
+      border-radius:12px; padding:10px 18px;
+      font-size:.85rem; font-weight:600; color:var(--text);
+      z-index:999; opacity:0; pointer-events:none;
+      transition:opacity .2s, transform .2s; white-space:nowrap;
+    }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* ── PREVIEW (QuickLook style para WKWebView) ── */
+    #previewScreen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      overflow: hidden;
+    }
+    .preview-header {
+      display: flex;
+      align-items: center;
+      padding: 0 20px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .preview-content {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+      background: var(--card);
+      margin: 0 16px;
+      border-radius: 20px;
+    }
+    .preview-content pre {
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      white-space: pre;
+      word-break: break-all;
+      color: var(--text);
+      background: var(--bg2);
+      padding: 16px;
+      border-radius: 12px;
+      margin: 0;
+    }
+    .preview-footer {
+      padding: 16px 20px;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+    }
+    ::-webkit-scrollbar { width:0; background:transparent; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ DOCK ══ -->
+  <nav class="dock">
+    <div class="dock-item active" id="dockStats"   onclick="switchTab('stats')">    <span class="icon">📊</span><span class="label" data-i18n="dock.stats">Stats</span></div>
+    <div class="dock-item" id="dockHistory" onclick="switchTab('history')">  <span class="icon">🧾</span><span class="label" data-i18n="dock.history">Log</span></div>
+    <div class="dock-item" id="dockData"    onclick="switchTab('data')">     <span class="icon">⚙️</span><span class="label" data-i18n="dock.data">Settings</span></div>
+  </nav>
+
+  <div class="screens-wrap">
+
+    <!-- ══ HOME ══ -->
+    <div class="screen" id="screenHome">
+      <div class="screen-inner">
+
+        <div class="home-greeting">
+          <div class="home-greeting-sub" id="homeGreetingTime">Hoy</div>
+          <div class="home-greeting-title" id="homeGreetingTitle">Tu <span>consciencia</span><br>te acompaña.</div>
+        </div>
+
+        <button class="home-register-btn" onclick="openAddFlow()">
+          <div class="hrb-icon">＋</div>
+          <div class="hrb-text">
+            <div class="hrb-title" data-i18n="home.newRecord">Nuevo registro</div>
+            <div class="hrb-sub"   data-i18n="home.newRecordSub">Registra una actividad ahora</div>
+          </div>
+          <span class="hrb-arrow">›</span>
+        </button>
+
+        <div class="home-section-row">
+          <span class="home-section-title" data-i18n="home.activeGoals">Metas activas</span>
+          <button class="home-section-action" onclick="toggleAddGoalForm()" data-i18n="home.addGoal">＋ Agregar</button>
+        </div>
+
+        <!-- Form agregar meta -->
+        <div class="add-goal-form hidden" id="addGoalForm">
+          <p style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;" data-i18n="home.newGoal">Nueva meta</p>
+          <span class="label-text" data-i18n="home.substance">Actividad</span>
+          <select id="goalSubSelect" style="margin-bottom:14px;"></select>
+          <span class="label-text" data-i18n="home.timeUnit">Unidad de tiempo</span>
+          <div class="time-unit-selector" id="timeUnitSelector">
+            <div class="tus-btn active" data-unit="hours"  onclick="selectTimeUnit('hours')" data-i18n="home.hours">Horas</div>
+            <div class="tus-btn"        data-unit="days"   onclick="selectTimeUnit('days')"  data-i18n="home.days">Días</div>
+            <div class="tus-btn"        data-unit="weeks"  onclick="selectTimeUnit('weeks')" data-i18n="home.weeks">Semanas</div>
+          </div>
+          <span class="label-text" id="goalAmountLabel">Cantidad de horas</span>
+          <div class="goal-form-row">
+            <input type="number" id="goalAmountInput" min="1" max="9999" placeholder="24">
+            <button class="btn btn-primary" onclick="addGoal()" style="padding:12px 18px;" data-i18n="home.add">Agregar</button>
+          </div>
+        </div>
+
+        <div id="fitnessCard" style="width:100%;max-width:480px;"></div>
+        <div class="goal-detail-card hidden" id="goalDetailCard"></div>
+
+      </div>
+    </div>
+
+    <!-- ══ ADD FLOW ══ -->
+    <div class="screen" id="screenAdd">
+      <div class="screen-inner center">
+        <div class="card" id="s1">
+          <p class="step-label" data-i18n="add.step1of5">Paso 1 de 5</p>
+          <div class="prog-wrap"><div class="prog-bar" style="width:20%"></div></div>
+          <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;" data-i18n="add.when">📅 ¿Cuándo?</p>
+          <span class="label-text" data-i18n="add.dateTime">Fecha y hora</span>
+          <input type="datetime-local" id="fechaHora" style="margin-bottom:0;">
+          <div class="btn-row" style="margin-top:14px;"><button class="btn btn-primary btn-full" onclick="goStep(1,2)" data-i18n="add.next">Siguiente →</button></div>
+        </div>
+        <div class="card" id="s2" style="display:none">
+          <p class="step-label" data-i18n="add.step2of5">Paso 2 de 5</p>
+          <div class="prog-wrap"><div class="prog-bar" style="width:40%"></div></div>
+          <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;" data-i18n="add.what">What coping mechanism did you use?</p>
+          <div class="substance-grid" id="substanceGrid"></div>
+          <div class="btn-row">
+            <button class="btn btn-secondary" onclick="goStep(2,1)" data-i18n="add.back">← Atrás</button>
+            <button class="btn btn-primary"   onclick="goStep(2,3)" data-i18n="add.next">Siguiente →</button>
+          </div>
+        </div>
+        <div class="card" id="s3" style="display:none">
+          <p class="step-label" data-i18n="add.step3of5">Step 3 of 5</p>
+          <div class="prog-wrap"><div class="prog-bar" style="width:60%"></div></div>
+          <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;" data-i18n="add.trigger">🧨 What was your trigger?</p>
+          <span class="label-text" data-i18n="add.triggerHint">Trigger details</span>
+          <textarea id="triggerInput" placeholder="Conflict, loneliness, stress, boredom..." style="margin-bottom:0;"></textarea>
+          <div class="btn-row" style="margin-top:10px;">
+            <button class="btn btn-secondary" onclick="goStep(3,2)" data-i18n="add.back">← Back</button>
+            <button class="btn btn-primary"   onclick="goStep(3,4)" data-i18n="add.next">Next →</button>
+          </div>
+        </div>
+        <div class="card" id="s4" style="display:none">
+          <p class="step-label" data-i18n="add.step4of5">Paso 4 de 5</p>
+          <div class="prog-wrap"><div class="prog-bar" style="width:80%"></div></div>
+          <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;" data-i18n="add.cravingLevel">⚡ Intensidad del impulso</p>
+          <div class="craving-grid" id="cravingGrid"></div>
+          <div class="craving-display mid" id="cravingDisplay">5</div>
+          <div class="btn-row">
+            <button class="btn btn-secondary" onclick="goStep(4,3)" data-i18n="add.back">← Atrás</button>
+            <button class="btn btn-primary"   onclick="goStep(4,5)" data-i18n="add.next">Siguiente →</button>
+          </div>
+        </div>
+        <div class="card" id="s5" style="display:none">
+          <p class="step-label" data-i18n="add.step5of5">Paso 5 de 5</p>
+          <div class="prog-wrap"><div class="prog-bar" style="width:100%"></div></div>
+          <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;" data-i18n="add.context">💬 Contexto</p>
+          <span class="label-text" data-i18n="add.whyWhere">¿Por qué o dónde?</span>
+          <textarea id="motivo" placeholder="Stress, loneliness, triggers, conflict…" style="margin-bottom:0;"></textarea>
+          <div class="btn-row" style="margin-top:10px;">
+            <button class="btn btn-secondary" onclick="goStep(5,4)" data-i18n="add.back">← Atrás</button>
+            <button class="btn btn-primary"   onclick="goStep(5,6)" data-i18n="add.review">Revisar ✓</button>
+          </div>
+        </div>
+        <div class="card" id="s6" style="display:none">
+          <p style="font-size:1.05rem;font-weight:700;margin-bottom:4px;" data-i18n="add.summary">📝 Resumen</p>
+          <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px;" data-i18n="add.confirmBefore">Confirma antes de guardar</p>
+          <div class="prog-wrap"><div class="prog-bar" style="width:100%"></div></div>
+          <div id="summaryRows"></div>
+          <div class="btn-row" style="margin-top:16px;">
+            <button class="btn btn-secondary" onclick="goStep(6,5)" data-i18n="add.edit">← Editar</button>
+            <button class="btn btn-primary"   onclick="guardar()"   data-i18n="add.save">💾 Guardar</button>
+          </div>
+        </div>
+        <div class="card" id="sSuccess" style="display:none;text-align:center;padding:30px 20px;">
+          <span class="success-icon">✅</span>
+          <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:8px;" data-i18n="add.saved">¡Guardado!</h2>
+          <p style="color:var(--muted);font-size:.85rem;margin-bottom:20px;" data-i18n="add.savedSub">Registro almacenado en tu dispositivo.</p>
+          <div class="btn-row">
+            <button class="btn btn-secondary" onclick="switchTab('stats')"    data-i18n="dock.stats">Stats</button>
+            <button class="btn btn-primary"   onclick="switchTab('history')" data-i18n="dock.history">Historial</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ HISTORIAL ══ -->
+    <div class="screen" id="screenHistory">
+      <div class="screen-inner">
+        <p class="page-title" data-i18n="history.title">Historial</p>
+        <div class="filter-chips" id="filterChips"></div>
+        <div class="history-list" id="historialList"></div>
+      </div>
+    </div>
+
+    <!-- ══ STATS ══ -->
+    <div class="screen active" id="screenStats">
+      <div class="screen-inner">
+        <div class="home-greeting">
+          <div class="home-greeting-sub" id="greetingTime">Today</div>
+          <div class="home-greeting-title" id="greetingTitle">Your <span>awareness</span><br>is with you.</div>
+        </div>
+        <button class="home-register-btn" onclick="openAddFlow()">
+          <div class="hrb-icon">＋</div>
+          <div class="hrb-text">
+            <div class="hrb-title" data-i18n="home.newRecord">New entry</div>
+            <div class="hrb-sub" data-i18n="home.newRecordSub">Log a coping mechanism now</div>
+          </div>
+          <span class="hrb-arrow">›</span>
+        </button>
+        <div class="first-use-guide hidden" id="firstUseGuide"></div>
+        <p class="page-title" data-i18n="stats.title">Estadísticas</p>
+        <div class="stats-range-row" id="statsRangeRow">
+          <div class="range-chip active" data-days="7"  onclick="setStatsRange(7)">7d</div>
+          <div class="range-chip"        data-days="30" onclick="setStatsRange(30)">30d</div>
+          <div class="range-chip"        data-days="90" onclick="setStatsRange(90)">90d</div>
+          <div class="range-chip"        data-days="0"  onclick="setStatsRange(0)" data-i18n="stats.all">Todo</div>
+        </div>
+
+        <div id="streakBanner"></div>
+
+        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.summary">Resumen</span><div class="ssh-line"></div></div>
+        <div class="stat-grid" id="statGrid"></div>
+
+        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.focusTracker">Focus tracker</span><div class="ssh-line"></div></div>
+        <div class="focus-tracker-card" id="focusTrackerCard"></div>
+
+        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.heatmap">Mapa de actividad</span><div class="ssh-line"></div></div>
+        <div class="heatmap-card" id="heatmapCard"></div>
+
+        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.timeOfDay">Hora del día</span><div class="ssh-line"></div></div>
+        <div class="tod-card" id="todCard"></div>
+
+        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.trend">Tendencia temporal</span><div class="ssh-line"></div></div>
+        <div class="stats-chart-card">
+          <div class="chart-legend" id="chartLegend"></div>
+          <div class="chart-scroll-wrap" id="chartScrollWrap">
+            <canvas id="lineChart"></canvas>
+          </div>
+        </div>
+
+        <div class="stats-section-header"><span class="ssh-label" data-i18n="stats.bySubstance">Por actividad</span><div class="ssh-line"></div></div>
+        <div class="sub-stats-list" id="subStatsList"></div>
+      </div>
+    </div>
+
+    <!-- ══ DATOS ══ -->
+    <div class="screen" id="screenData">
+      <div class="screen-inner">
+        <p class="page-title" data-i18n="data.title">Datos</p>
+
+        <!-- ── Idioma ── -->
+        <p class="section-label" data-i18n="data.language">Idioma</p>
+        <div class="lang-toggle-card">
+          <span class="lang-toggle-icon">🌐</span>
+          <div class="lang-toggle-info">
+            <div class="lang-toggle-title" data-i18n="data.languageTitle">Idioma de la app</div>
+            <div class="lang-toggle-sub"   data-i18n="data.languageSub">Cambia entre español e inglés</div>
+          </div>
+          <div class="lang-pill-wrap">
+            <button class="lang-pill active" id="pillEn" onclick="setLang('en')">EN</button>
+            <button class="lang-pill"        id="pillNl" onclick="setLang('nl')">NL</button>
+            <button class="lang-pill"        id="pillEs" onclick="setLang('es')">ES</button>
+          </div>
+        </div>
+
+        <!-- ── Mechanisms (Local only) ── -->
+        <p class="section-label" style="margin-top:6px;" data-i18n="data.mechanisms">Mechanisms</p>
+        <div class="mech-editor">
+          <p class="mech-help" data-i18n="data.mechanismsHelp">One per line. Use `emoji name` or `emoji|name`.</p>
+          <textarea id="mechanismsText" style="min-height:130px"></textarea>
+          <div class="btn-row" style="margin-top:8px;">
+            <button class="btn btn-secondary" onclick="resetMechanismsToDefault()" data-i18n="data.resetMechanisms">Reset default</button>
+            <button class="btn btn-primary" onclick="saveMechanismsFromEditor()" data-i18n="data.saveMechanisms">Save mechanisms</button>
+          </div>
+        </div>
+
+        <p class="section-label" style="margin-top:10px;" data-i18n="data.focusTracker">Focus tracker</p>
+        <div class="mech-editor">
+          <p class="mech-help" data-i18n="data.focusHelp">Pick the mechanism(s) you want to track in the focus card.</p>
+          <span class="label-text" data-i18n="data.focusPrimary">Primary mechanism</span>
+          <select id="focusSub1Select"></select>
+          <span class="label-text" style="margin-top:8px;" data-i18n="data.focusSecondary">Secondary mechanism (optional)</span>
+          <select id="focusSub2Select"></select>
+          <div class="btn-row" style="margin-top:8px;">
+            <button class="btn btn-primary" onclick="saveFocusTrackerFromSettings()" data-i18n="data.saveFocus">Save focus tracker</button>
+          </div>
+        </div>
+
+        <!-- ── Exportar ── -->
+        <p class="section-label" style="margin-top:6px;" data-i18n="data.export">Exportar</p>
+        <div class="data-action" onclick="exportJSON()">
+          <span class="da-icon">📤</span>
+          <div class="da-text">
+            <div class="da-title" data-i18n="data.exportJSON">Exportar JSON</div>
+            <div class="da-sub"   data-i18n="data.exportJSONSub">Backup completo de todos tus registros</div>
+          </div>
+          <span class="da-arrow">›</span>
+        </div>
+        <div class="data-action" onclick="exportCSV()">
+          <span class="da-icon">📊</span>
+          <div class="da-text">
+            <div class="da-title" data-i18n="data.exportCSV">Exportar CSV</div>
+            <div class="da-sub"   data-i18n="data.exportCSVSub">Compatible con Excel y Google Sheets</div>
+          </div>
+          <span class="da-arrow">›</span>
+        </div>
+
+        <!-- ── Importar ── -->
+        <p class="section-label" style="margin-top:14px;" data-i18n="data.import">Importar</p>
+        <div class="data-action" onclick="document.getElementById('importInput').click()">
+          <span class="da-icon">📥</span>
+          <div class="da-text">
+            <div class="da-title" data-i18n="data.importJSON">Importar JSON</div>
+            <div class="da-sub"   data-i18n="data.importJSONSub">Restaura un backup anterior</div>
+          </div>
+          <span class="da-arrow">›</span>
+        </div>
+        <div class="data-action" onclick="openImportPaste()">
+          <span class="da-icon">📋</span>
+          <div class="da-text">
+            <div class="da-title" data-i18n="data.importPaste">Pegar JSON</div>
+            <div class="da-sub"   data-i18n="data.importPasteSub">Alternativa si el selector de archivos falla</div>
+          </div>
+          <span class="da-arrow">›</span>
+        </div>
+        <input type="file" id="importInput" accept=".json,application/json" onchange="importJSON(event)">
+        <div class="card hidden" id="importPasteCard" style="margin-top:8px;">
+          <p class="section-label" style="margin-bottom:10px;" data-i18n="data.importPasteLabel">Pega tu JSON aquí</p>
+          <textarea id="importPasteText" style="min-height:140px" placeholder='[{"dateTime":"2026-01-01T10:00","mechanism":"Self Sex","intensity":7}]'></textarea>
+          <div class="btn-row" style="margin-top:6px;">
+            <button class="btn btn-secondary" onclick="closeImportPaste()" data-i18n="data.cancel">Cancel</button>
+            <button class="btn btn-primary" onclick="importJSONFromPaste()" data-i18n="data.importNow">Import now</button>
+          </div>
+        </div>
+        <div style="width:100%;max-width:480px;margin-top:6px;">
+          <p style="font-size:.72rem;color:var(--muted);text-align:center;line-height:1.5;" data-i18n="data.importWarning">
+            ⚠️ La importación reemplazará todos los registros actuales.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══ I18N ══ */
+const I18N = {
+  es: {
+    'dock.home':    'Inicio',
+    'dock.add':     'Nuevo',
+    'dock.history': 'Historial',
+    'dock.stats':   'Stats',
+    'dock.data':    'Ajustes',
+
+    'home.newRecord':    'Nuevo registro',
+    'home.newRecordSub': 'Registra un mecanismo ahora',
+    'home.activeGoals':  'Metas activas',
+    'home.addGoal':      '＋ Agregar',
+    'home.newGoal':      'Nueva meta',
+    'home.substance':    'Mecanismo',
+    'home.timeUnit':     'Unidad de tiempo',
+    'home.hours':        'Horas',
+    'home.days':         'Días',
+    'home.weeks':        'Semanas',
+    'home.add':          'Agregar',
+    'home.noGoals':      'Sin metas activas',
+    'home.noRecords':    'Sin registros',
+    'home.goalDone':     '✓ Meta cumplida 🎉',
+    'home.goalTarget':   'Meta:',
+    'home.amountOf':     'Cantidad de',
+    'home.hoursLbl':     'horas',
+    'home.daysLbl':      'días',
+    'home.weeksLbl':     'semanas',
+    'home.dLbl':         'días',
+    'home.hLbl':         'horas',
+    'home.mLbl':         'min',
+    'home.greeting.morning': 'Buenos días ☀️',
+    'home.greeting.afternoon': 'Buenas tardes 🌤️',
+    'home.greeting.evening': 'Buenas noches 🌙',
+    'home.greeting.title': 'Tu <span>consciencia</span><br>te acompaña.',
+
+    'add.step1of5':    'Paso 1 de 5',
+    'add.step2of5':    'Paso 2 de 5',
+    'add.step3of5':    'Paso 3 de 5',
+    'add.step4of5':    'Paso 4 de 5',
+    'add.step5of5':    'Paso 5 de 5',
+    'add.when':        '📅 ¿Cuándo?',
+    'add.dateTime':    'Fecha y hora',
+    'add.what':        '🧩 ¿Qué mecanismo de afrontamiento usaste?',
+    'add.trigger':     '🧨 ¿Cuál fue tu detonante?',
+    'add.triggerHint': 'Detalle del detonante',
+    'add.howMany':     '📏 ¿Cuántos',
+    'add.amountIn':    'Cantidad en',
+    'add.cravingLevel':'⚡ Intensidad del impulso',
+    'add.context':     '💬 Contexto',
+    'add.whyWhere':    '¿Por qué o dónde?',
+    'add.review':      'Revisar ✓',
+    'add.summary':     '📝 Resumen',
+    'add.confirmBefore':'Confirma antes de guardar',
+    'add.edit':        '← Editar',
+    'add.save':        '💾 Guardar',
+    'add.saved':       '¡Guardado!',
+    'add.savedSub':    'Registro almacenado en tu dispositivo.',
+    'add.next':        'Siguiente →',
+    'add.back':        '← Atrás',
+    'add.sumWhen':     '📅 Cuándo',
+    'add.sumWhat':     '✨ Qué',
+    'add.sumAmount':   '📏 Cantidad',
+    'add.sumTrigger':  '🧨 Detonante',
+    'add.sumCraving':  '⚡ Intensidad',
+    'add.sumReason':   '💬 Motivo',
+    'add.warnDate':    '⚠️ Ingresa fecha y hora',
+    'add.warnSub':     '⚠️ Elige al menos un mecanismo',
+    'add.warnAmount':  '⚠️ Ingresa la cantidad',
+    'add.warnTrigger': '⚠️ Escribe tu detonante',
+
+    'history.title': 'Historial',
+    'history.all':   'Todas',
+    'history.empty': 'Sin registros aquí.',
+    'history.deleteConfirm': '¿Eliminar este registro?',
+
+    'stats.title':       'Estadísticas',
+    'stats.all':         'Todo',
+    'stats.summary':     'Resumen',
+    'stats.heatmap':     'Mapa de actividad',
+    'stats.timeOfDay':   'Hora del día',
+    'stats.trend':       'Tendencia temporal',
+    'stats.bySubstance': 'Por mecanismo',
+    'stats.focusTracker':'Enfoque sexual',
+    'stats.focusSub':    'Seguimiento de mecanismos seleccionados',
+    'stats.focusNoData': 'Sin registros en este enfoque',
+    'stats.records':     'Registros',
+    'stats.avgCraving':  'Intensidad media',
+    'stats.activeDays':  'Días activos',
+    'stats.recPerDay':   'Registros/día',
+    'stats.mostCommon':  'Mecanismo más frecuente',
+    'stats.vsPrev':      'vs período anterior',
+    'stats.activityByDay': 'Actividad por día',
+    'stats.less':        'Menos',
+    'stats.more':        'Más',
+    'stats.hourlyDist':  'Distribución horaria',
+    'stats.peak':        'Pico:',
+    'stats.noData':      'Sin datos',
+    'stats.noDataPeriod':'Sin datos para este período.',
+    'stats.streak':      'días sin registros — racha activa',
+    'stats.times':       'Veces',
+    'stats.craving':     'Intensidad',
+    'stats.total':       'Total',
+    'stats.tendency':    'Tendencia',
+    'stats.cravingDist': 'Distribución de intensidad',
+    'stats.avgInterval': 'Intervalo promedio',
+    'stats.every':       'Cada',
+    'stats.days2':       'días',
+    'stats.hours2':      'horas',
+    'stats.latestRecs':  'Últimos registros',
+    'stats.low':         'Bajo 0–3',
+    'stats.mid':         'Medio 4–6',
+    'stats.high':        'Alto 7–10',
+    'stats.noDataShort': 'Sin datos',
+    'stats.firstUseTitle':'Primer uso',
+    'stats.firstUseBody': 'Usa el botón de Nuevo registro para guardar tu coping.',
+    'stats.firstUseStepLog':'1. Toca "Nuevo registro" y elige el mecanismo.',
+    'stats.firstUseStepSettings':'2. En Ajustes puedes cambiar la lista a tus opciones.',
+
+    'data.title':         'Ajustes',
+    'data.language':      'Idioma',
+    'data.languageTitle': 'Idioma de la app',
+    'data.languageSub':   'Cambia entre inglés, neerlandés y español',
+    'data.mechanisms':    'Mecanismos',
+    'data.mechanismsHelp':'Una línea por opción. Usa `emoji nombre` o `emoji|nombre`.',
+    'data.saveMechanisms':'Guardar mecanismos',
+    'data.resetMechanisms':'Restaurar por defecto',
+    'data.focusTracker':  'Enfoque',
+    'data.focusHelp':     'Elige los mecanismos para la tarjeta de enfoque.',
+    'data.focusPrimary':  'Mecanismo principal',
+    'data.focusSecondary':'Mecanismo secundario (opcional)',
+    'data.saveFocus':     'Guardar enfoque',
+    'data.none':          'Ninguno',
+    'data.export':        'Exportar',
+    'data.exportJSON':    'Exportar JSON',
+    'data.exportJSONSub': 'Backup completo de todos tus registros',
+    'data.exportCSV':     'Exportar CSV',
+    'data.exportCSVSub':  'Compatible con Excel y Google Sheets',
+    'data.import':        'Importar',
+    'data.importJSON':    'Importar JSON',
+    'data.importJSONSub': 'Restaura un backup anterior',
+    'data.importPaste':   'Pegar JSON',
+    'data.importPasteSub':'Alternativa si el selector de archivos falla',
+    'data.importPasteLabel':'Pega tu JSON aquí',
+    'data.cancel':        'Cancelar',
+    'data.importNow':     'Importar ahora',
+    'data.importWarning': '⚠️ La importación reemplazará todos los registros actuales.',
+    'preview.copy':       'Copiar',
+    'preview.close':      'Cerrar vista previa',
+    'preview.helper':     'Vista previa QuickLook • Copia el contenido o toma captura para guardarlo',
+
+    'toast.noData':        '⚠️ No hay datos',
+    'toast.jsonExported':  '✅ JSON exportado',
+    'toast.csvExported':   '✅ CSV exportado',
+    'toast.imported':      '✅ {n} registros importados',
+    'toast.invalidJSON':   '❌ Archivo JSON inválido',
+    'toast.noGoalAmount':  '⚠️ Ingresa una cantidad válida',
+    'toast.noGoalRecords': '⚠️ No hay registros de {sub}',
+    'toast.replaceConfirm':'¿Reemplazar registros actuales con {n} del archivo?',
+    'toast.copied':        '✅ Copiado al portapapeles',
+    'toast.copyError':     '❌ Error al copiar',
+    'toast.mechanismsSaved':'✅ Mecanismos guardados',
+    'toast.mechanismsReset':'✅ Mecanismos restaurados',
+    'toast.mechanismsInvalid':'⚠️ Añade al menos un mecanismo válido',
+    'toast.focusSaved':    '✅ Enfoque guardado',
+    'toast.focusInvalid':  '⚠️ Elige al menos un mecanismo',
+    'label.entry.one':     'registro',
+    'label.entry.other':   'registros',
+    'label.day.one':       'día',
+    'label.day.other':     'días',
+
+    'locale': 'es-MX',
+  },
+
+  en: {
+    'dock.home':    'Home',
+    'dock.add':     'New',
+    'dock.history': 'Log',
+    'dock.stats':   'Stats',
+    'dock.data':    'Settings',
+
+    'home.newRecord':    'New entry',
+    'home.newRecordSub': 'Log a coping mechanism now',
+    'home.activeGoals':  'Active goals',
+    'home.addGoal':      '＋ Add',
+    'home.newGoal':      'New goal',
+    'home.substance':    'Mechanism',
+    'home.timeUnit':     'Time unit',
+    'home.hours':        'Hours',
+    'home.days':         'Days',
+    'home.weeks':        'Weeks',
+    'home.add':          'Add',
+    'home.noGoals':      'No active goals',
+    'home.noRecords':    'No entries yet',
+    'home.goalDone':     '✓ Goal achieved 🎉',
+    'home.goalTarget':   'Goal:',
+    'home.amountOf':     'Number of',
+    'home.hoursLbl':     'hours',
+    'home.daysLbl':      'days',
+    'home.weeksLbl':     'weeks',
+    'home.dLbl':         'days',
+    'home.hLbl':         'hours',
+    'home.mLbl':         'min',
+    'home.greeting.morning':   'Good morning ☀️',
+    'home.greeting.afternoon': 'Good afternoon 🌤️',
+    'home.greeting.evening':   'Good evening 🌙',
+    'home.greeting.title': 'Your <span>awareness</span><br>is with you.',
+
+    'add.step1of5':    'Step 1 of 5',
+    'add.step2of5':    'Step 2 of 5',
+    'add.step3of5':    'Step 3 of 5',
+    'add.step4of5':    'Step 4 of 5',
+    'add.step5of5':    'Step 5 of 5',
+    'add.when':        '📅 When?',
+    'add.dateTime':    'Date & time',
+    'add.what':        'What coping mechanism did you use?',
+    'add.trigger':     'What was your trigger?',
+    'add.triggerHint': 'Trigger details',
+    'add.howMany':     '📏 How many',
+    'add.amountIn':    'Amount in',
+    'add.cravingLevel':'⚡ Urge intensity',
+    'add.context':     '💬 Context',
+    'add.whyWhere':    'Why or where?',
+    'add.review':      'Review ✓',
+    'add.summary':     '📝 Summary',
+    'add.confirmBefore':'Confirm before saving',
+    'add.edit':        '← Edit',
+    'add.save':        '💾 Save',
+    'add.saved':       'Saved!',
+    'add.savedSub':    'Entry stored on your device.',
+    'add.next':        'Next →',
+    'add.back':        '← Back',
+    'add.sumWhen':     '📅 When',
+    'add.sumWhat':     '✨ What',
+    'add.sumAmount':   '📏 Amount',
+    'add.sumTrigger':  '🧨 Trigger',
+    'add.sumCraving':  '⚡ Intensity',
+    'add.sumReason':   '💬 Reason',
+    'add.warnDate':    '⚠️ Enter date and time',
+    'add.warnSub':     '⚠️ Choose at least one mechanism',
+    'add.warnAmount':  '⚠️ Enter the amount',
+    'add.warnTrigger': '⚠️ Enter your trigger',
+
+    'history.title': 'Log',
+    'history.all':   'All',
+    'history.empty': 'No entries here.',
+    'history.deleteConfirm': 'Delete this entry?',
+
+    'stats.title':       'Statistics',
+    'stats.all':         'All',
+    'stats.summary':     'Summary',
+    'stats.heatmap':     'Activity map',
+    'stats.timeOfDay':   'Time of day',
+    'stats.trend':       'Trend over time',
+    'stats.bySubstance': 'By mechanism',
+    'stats.focusTracker':'Sexual focus tracker',
+    'stats.focusSub':    'Tracking selected mechanisms',
+    'stats.focusNoData': 'No focus entries in this period',
+    'stats.records':     'Entries',
+    'stats.avgCraving':  'Avg intensity',
+    'stats.activeDays':  'Active days',
+    'stats.recPerDay':   'Entries/day',
+    'stats.mostCommon':  'Most frequent activity',
+    'stats.vsPrev':      'vs previous period',
+    'stats.activityByDay':'Activity by day',
+    'stats.less':        'Less',
+    'stats.more':        'More',
+    'stats.hourlyDist':  'Hourly distribution',
+    'stats.peak':        'Peak:',
+    'stats.noData':      'No data',
+    'stats.noDataPeriod':'No data for this period.',
+    'stats.streak':      'days without entries — active streak',
+    'stats.times':       'Times',
+    'stats.craving':     'Intensity',
+    'stats.total':       'Total',
+    'stats.tendency':    'Trend',
+    'stats.cravingDist': 'Intensity distribution',
+    'stats.avgInterval': 'Average interval',
+    'stats.every':       'Every',
+    'stats.days2':       'days',
+    'stats.hours2':      'hours',
+    'stats.latestRecs':  'Latest entries',
+    'stats.low':         'Low 0–3',
+    'stats.mid':         'Mid 4–6',
+    'stats.high':        'High 7–10',
+    'stats.noDataShort': 'No data',
+    'stats.firstUseTitle':'First use',
+    'stats.firstUseBody':'Use the New entry button to log your coping behavior.',
+    'stats.firstUseStepLog':'1. Tap "New entry" and choose a mechanism.',
+    'stats.firstUseStepSettings':'2. In Settings you can replace the list with your own options.',
+
+    'data.title':         'Settings',
+    'data.language':      'Language',
+    'data.languageTitle': 'App language',
+    'data.languageSub':   'Switch between English, Dutch, and Spanish',
+    'data.mechanisms':    'Mechanisms',
+    'data.mechanismsHelp':'One per line. Use `emoji name` or `emoji|name`.',
+    'data.saveMechanisms':'Save mechanisms',
+    'data.resetMechanisms':'Reset default',
+    'data.focusTracker':  'Focus tracker',
+    'data.focusHelp':     'Pick the mechanisms you want in the focus card.',
+    'data.focusPrimary':  'Primary mechanism',
+    'data.focusSecondary':'Secondary mechanism (optional)',
+    'data.saveFocus':     'Save focus tracker',
+    'data.none':          'None',
+    'data.export':        'Export',
+    'data.exportJSON':    'Export JSON',
+    'data.exportJSONSub': 'Full backup of all your entries',
+    'data.exportCSV':     'Export CSV',
+    'data.exportCSVSub':  'Compatible with Excel and Google Sheets',
+    'data.import':        'Import',
+    'data.importJSON':    'Import JSON',
+    'data.importJSONSub': 'Restore a previous backup',
+    'data.importPaste':   'Paste JSON',
+    'data.importPasteSub':'Use this if the file picker fails on iPhone',
+    'data.importPasteLabel':'Paste your JSON here',
+    'data.cancel':        'Cancel',
+    'data.importNow':     'Import now',
+    'data.importWarning': '⚠️ Import will replace all current entries.',
+    'preview.copy':       'Copy',
+    'preview.close':      'Close preview',
+    'preview.helper':     'QuickLook preview • Copy the content or take a screenshot to save it',
+
+    'toast.noData':        '⚠️ No data',
+    'toast.jsonExported':  '✅ JSON exported',
+    'toast.csvExported':   '✅ CSV exported',
+    'toast.imported':      '✅ {n} entries imported',
+    'toast.invalidJSON':   '❌ Invalid JSON file',
+    'toast.noGoalAmount':  '⚠️ Enter a valid amount',
+    'toast.noGoalRecords': '⚠️ No entries for {sub}',
+    'toast.replaceConfirm':'Replace current entries with {n} from file?',
+    'toast.copied':        '✅ Copied to clipboard',
+    'toast.copyError':     '❌ Error copying',
+    'toast.mechanismsSaved':'✅ Mechanisms saved',
+    'toast.mechanismsReset':'✅ Mechanisms reset',
+    'toast.mechanismsInvalid':'⚠️ Add at least one valid mechanism',
+    'toast.focusSaved':    '✅ Focus tracker saved',
+    'toast.focusInvalid':  '⚠️ Choose at least one mechanism',
+    'label.entry.one':     'entry',
+    'label.entry.other':   'entries',
+    'label.day.one':       'day',
+    'label.day.other':     'days',
+
+    'locale': 'en-US',
+  }
+};
+
+I18N.nl = {
+  ...I18N.en,
+  'dock.home': 'Start',
+  'dock.add': 'Nieuw',
+  'dock.history': 'Logboek',
+  'dock.stats': 'Statistiek',
+  'dock.data': 'Instellingen',
+  'home.newRecord': 'Nieuwe invoer',
+  'home.newRecordSub': 'Log nu een copingmechanisme',
+  'home.activeGoals': 'Actieve doelen',
+  'home.addGoal': '＋ Toevoegen',
+  'home.newGoal': 'Nieuw doel',
+  'home.substance': 'Mechanisme',
+  'home.timeUnit': 'Tijdseenheid',
+  'home.hours': 'Uren',
+  'home.days': 'Dagen',
+  'home.weeks': 'Weken',
+  'home.add': 'Toevoegen',
+  'home.noGoals': 'Geen actieve doelen',
+  'home.noRecords': 'Geen invoer',
+  'home.goalDone': '✓ Doel behaald 🎉',
+  'home.goalTarget': 'Doel:',
+  'home.amountOf': 'Aantal',
+  'home.hoursLbl': 'uren',
+  'home.daysLbl': 'dagen',
+  'home.weeksLbl': 'weken',
+  'home.dLbl': 'dagen',
+  'home.hLbl': 'uren',
+  'home.mLbl': 'min',
+  'home.greeting.morning': 'Goedemorgen ☀️',
+  'home.greeting.afternoon': 'Goedemiddag 🌤️',
+  'home.greeting.evening': 'Goedenavond 🌙',
+  'home.greeting.title': 'Je <span>bewustzijn</span><br>is bij je.',
+  'add.step1of5': 'Stap 1 van 5',
+  'add.step2of5': 'Stap 2 van 5',
+  'add.step3of5': 'Stap 3 van 5',
+  'add.step4of5': 'Stap 4 van 5',
+  'add.step5of5': 'Stap 5 van 5',
+  'add.when': '📅 Wanneer?',
+  'add.dateTime': 'Datum en tijd',
+  'add.what': 'Welk copingmechanisme heb je gebruikt?',
+  'add.trigger': 'Wat was je trigger?',
+  'add.triggerHint': 'Trigger-details',
+  'add.cravingLevel': '⚡ Intensiteit van de drang',
+  'add.context': '💬 Context',
+  'add.whyWhere': 'Waarom of waar?',
+  'add.review': 'Controleren ✓',
+  'add.summary': '📝 Samenvatting',
+  'add.confirmBefore': 'Bevestig voor opslaan',
+  'add.edit': '← Bewerken',
+  'add.save': '💾 Opslaan',
+  'add.saved': 'Opgeslagen!',
+  'add.savedSub': 'Invoer is op je apparaat opgeslagen.',
+  'add.next': 'Volgende →',
+  'add.back': '← Terug',
+  'add.sumWhen': '📅 Wanneer',
+  'add.sumWhat': '✨ Wat',
+  'add.sumTrigger': '🧨 Trigger',
+  'add.sumCraving': '⚡ Intensiteit',
+  'add.sumReason': '💬 Notitie',
+  'add.warnDate': '⚠️ Vul datum en tijd in',
+  'add.warnSub': '⚠️ Kies minstens één mechanisme',
+  'add.warnTrigger': '⚠️ Vul je trigger in',
+  'history.all': 'Alles',
+  'history.empty': 'Geen invoer hier.',
+  'history.deleteConfirm': 'Deze invoer verwijderen?',
+  'stats.title': 'Statistieken',
+  'stats.all': 'Alles',
+  'stats.summary': 'Overzicht',
+  'stats.heatmap': 'Activiteitenkaart',
+  'stats.timeOfDay': 'Moment van de dag',
+  'stats.trend': 'Trend over tijd',
+  'stats.bySubstance': 'Per mechanisme',
+  'stats.focusTracker':'Seksuele focus-tracker',
+  'stats.focusSub': 'Tracking van geselecteerde mechanismen',
+  'stats.focusNoData': 'Geen focus-invoer in deze periode',
+  'stats.records': 'Invoer',
+  'stats.avgCraving': 'Gem. intensiteit',
+  'stats.activeDays': 'Actieve dagen',
+  'stats.recPerDay': 'Invoer/dag',
+  'stats.mostCommon': 'Meest voorkomend mechanisme',
+  'stats.vsPrev': 'vs vorige periode',
+  'stats.activityByDay': 'Activiteit per dag',
+  'stats.less': 'Minder',
+  'stats.more': 'Meer',
+  'stats.hourlyDist': 'Uurverdeling',
+  'stats.peak': 'Piek:',
+  'stats.noData': 'Geen data',
+  'stats.noDataPeriod': 'Geen data voor deze periode.',
+  'stats.streak': 'dagen zonder invoer — actieve streak',
+  'stats.times': 'Keer',
+  'stats.craving': 'Intensiteit',
+  'stats.total': 'Totaal',
+  'stats.tendency': 'Trend',
+  'stats.cravingDist': 'Intensiteitsverdeling',
+  'stats.avgInterval': 'Gemiddeld interval',
+  'stats.every': 'Elke',
+  'stats.days2': 'dagen',
+  'stats.hours2': 'uur',
+  'stats.latestRecs': 'Laatste invoer',
+  'stats.low': 'Laag 0–3',
+  'stats.mid': 'Midden 4–6',
+  'stats.high': 'Hoog 7–10',
+  'stats.noDataShort': 'Geen data',
+  'stats.firstUseTitle': 'Eerste gebruik',
+  'stats.firstUseBody': 'Gebruik de knop Nieuwe invoer om je copinggedrag te loggen.',
+  'stats.firstUseStepLog': '1. Tik op "Nieuwe invoer" en kies een mechanisme.',
+  'stats.firstUseStepSettings': '2. In Instellingen kun je de lijst aanpassen naar je eigen opties.',
+  'data.title': 'Instellingen',
+  'data.language': 'Taal',
+  'data.languageTitle': 'App-taal',
+  'data.languageSub': 'Wissel tussen Engels, Nederlands en Spaans',
+  'data.mechanisms': 'Mechanismen',
+  'data.mechanismsHelp': 'Eén per regel. Gebruik `emoji naam` of `emoji|naam`.',
+  'data.saveMechanisms': 'Mechanismen opslaan',
+  'data.resetMechanisms': 'Standaard herstellen',
+  'data.focusTracker': 'Focus-tracker',
+  'data.focusHelp': 'Kies de mechanismen voor de focuskaart.',
+  'data.focusPrimary': 'Primair mechanisme',
+  'data.focusSecondary': 'Secundair mechanisme (optioneel)',
+  'data.saveFocus': 'Focus opslaan',
+  'data.none': 'Geen',
+  'data.export': 'Exporteren',
+  'data.exportJSON': 'Exporteer JSON',
+  'data.exportJSONSub': 'Volledige back-up van al je invoer',
+  'data.exportCSV': 'Exporteer CSV',
+  'data.exportCSVSub': 'Compatibel met Excel en Google Sheets',
+  'data.import': 'Importeren',
+  'data.importJSON': 'Importeer JSON',
+  'data.importJSONSub': 'Herstel een eerdere back-up',
+  'data.importPaste': 'JSON plakken',
+  'data.importPasteSub': 'Gebruik dit als bestandskiezer op iPhone faalt',
+  'data.importPasteLabel': 'Plak je JSON hier',
+  'data.cancel': 'Annuleren',
+  'data.importNow': 'Nu importeren',
+  'data.importWarning': '⚠️ Import vervangt alle huidige invoer.',
+  'preview.copy': 'Kopiëren',
+  'preview.close': 'Voorbeeld sluiten',
+  'preview.helper': 'QuickLook voorbeeld • Kopieer de inhoud of maak een screenshot om op te slaan',
+  'toast.noData': '⚠️ Geen data',
+  'toast.jsonExported': '✅ JSON geëxporteerd',
+  'toast.csvExported': '✅ CSV geëxporteerd',
+  'toast.imported': '✅ {n} invoer geïmporteerd',
+  'toast.invalidJSON': '❌ Ongeldig JSON-bestand',
+  'toast.noGoalAmount': '⚠️ Vul een geldig aantal in',
+  'toast.noGoalRecords': '⚠️ Geen invoer voor {sub}',
+  'toast.replaceConfirm': 'Huidige invoer vervangen door {n} uit het bestand?',
+  'toast.copied': '✅ Gekopieerd naar klembord',
+  'toast.copyError': '❌ Fout bij kopiëren',
+  'toast.mechanismsSaved': '✅ Mechanismen opgeslagen',
+  'toast.mechanismsReset': '✅ Mechanismen hersteld',
+  'toast.mechanismsInvalid': '⚠️ Voeg minstens één geldig mechanisme toe',
+  'toast.focusSaved': '✅ Focus opgeslagen',
+  'toast.focusInvalid': '⚠️ Kies minstens één mechanisme',
+  'history.title': 'Logboek',
+  'label.entry.one': 'item',
+  'label.entry.other': 'items',
+  'label.day.one': 'dag',
+  'label.day.other': 'dagen',
+  'locale': 'nl-NL',
+};
+
+const SETTINGS_KEY='badhabbit_settings_v1';
+let lang = localStorage.getItem('lang') || 'en';
+
+function t(key, vars) {
+  let str = (I18N[lang] && I18N[lang][key]) || (I18N['es'][key]) || key;
+  if (vars) Object.keys(vars).forEach(k => { str = str.replace('{' + k + '}', vars[k]); });
+  return str;
+}
+
+function pluralLabel(baseKey, count){
+  return count===1 ? t(`${baseKey}.one`) : t(`${baseKey}.other`);
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const val = t(key);
+    if (key === 'home.greeting.title') { el.innerHTML = val; }
+    else { el.textContent = val; }
+  });
+  document.getElementById('pillEn').classList.toggle('active', lang === 'en');
+  document.getElementById('pillNl').classList.toggle('active', lang === 'nl');
+  document.getElementById('pillEs').classList.toggle('active', lang === 'es');
+  document.documentElement.lang = (lang === 'es' || lang === 'nl') ? lang : 'en';
+}
+
+function setLang(l) {
+  if (lang === l) return;
+  lang = l;
+  localStorage.setItem('lang', l);
+  saveSettings();
+  applyI18n();
+  refreshFocusTrackerSettingsUI();
+  renderStats();
+  if (currentTab === 'history') renderHistory();
+  if (currentTab === 'stats')   renderStats();
+}
+
+/* ══ SUBSTANCES ══ */
+const DEFAULT_MECHANISMS = [
+  { name:'Social Media Scroll', unit:'entry', emoji:'📱' },
+  { name:'Short Video Binge',   unit:'entry', emoji:'🎬' },
+  { name:'Gaming',              unit:'entry', emoji:'🎮' },
+  { name:'Comfort Eating',      unit:'entry', emoji:'🍔' },
+  { name:'Alcohol',             unit:'entry', emoji:'🍺' },
+  { name:'Cannabis',            unit:'entry', emoji:'🌿' },
+  { name:'Stress Shopping',     unit:'entry', emoji:'🛍️' },
+  { name:'Avoidance / Isolation', unit:'entry', emoji:'🙈' },
+];
+const LEGACY_PERSONAL_DEFAULTS = [
+  'self sex',
+  'clothed wet sex',
+  'alcohol',
+  'over eating',
+  'stress shopping',
+  'weed',
+  'excessive money saving',
+  'hiding & not talking',
+];
+const LEGACY_FOCUS_SUBS = ['Self Sex', 'Clothed Wet Sex'];
+let mechanisms = [];
+let focusSubs = [];
+const RING_COLORS = ['#f87171','#34d399','#818cf8','#fbbf24','#e879f9','#2dd4bf'];
+const LINE_COLORS = ['#818cf8','#34d399','#fbbf24','#f87171','#60a5fa','#e879f9','#2dd4bf','#c084fc'];
+
+const LEGACY_SUB_NAME_MAP = {
+  'Redes sociales': 'Social Media',
+  'Videos cortos': 'Short Videos',
+  'Videojuegos': 'Gaming',
+  'Música': 'Music',
+  'Cafeína': 'Caffeine',
+  'Tabaco': 'Tobacco',
+  'Cocaína': 'Cocaine',
+  'Metanfetamina': 'Methamphetamine',
+  'Aprendizaje': 'Learning',
+  'Compras online': 'Online Shopping',
+  'Ejercicio': 'Exercise',
+  'Cannabis': 'Cannabis',
+  'self sex': 'Self Sex',
+  'clothed wet sex': 'Clothed Wet Sex',
+  'alcohol': 'Alcohol',
+  'over eating': 'Over Eating',
+  'overeating': 'Over Eating',
+  'stress shopping': 'Stress Shopping',
+  'weed': 'Weed',
+  'exsessive money saving': 'Excessive Money Saving',
+  'excessive money saving': 'Excessive Money Saving',
+  'hiding & not talking': 'Hiding & Not Talking',
+  'hiding and not talking': 'Hiding & Not Talking',
+};
+
+function normalizeSubName(name){
+  if(!name) return name;
+  return LEGACY_SUB_NAME_MAP[name] || LEGACY_SUB_NAME_MAP[name.toLowerCase()] || name;
+}
+
+function sanitizeMechanisms(list){
+  if(!Array.isArray(list)) return [];
+  const clean=[];
+  list.forEach(item=>{
+    let name='',emoji='⚡',unit='entry';
+    if(typeof item==='string'){
+      name=item.trim();
+    }else if(item && typeof item==='object'){
+      name=String(item.name ?? item.label ?? item.title ?? '').trim();
+      emoji=String(item.emoji ?? item.icon ?? '⚡').trim()||'⚡';
+      unit=String(item.unit ?? item.unidad ?? 'entry').trim()||'entry';
+    }
+    if(!name) return;
+    const key=name.toLowerCase();
+    if(clean.some(x=>x.name.toLowerCase()===key)) return;
+    clean.push({name,emoji,unit});
+  });
+  return clean;
+}
+
+function isLegacyPersonalDefaultList(list){
+  if(!Array.isArray(list) || list.length!==LEGACY_PERSONAL_DEFAULTS.length) return false;
+  const names=list.map(i=>String(i.name||'').trim().toLowerCase());
+  return LEGACY_PERSONAL_DEFAULTS.every((name,idx)=>name===names[idx]);
+}
+
+function getActiveMechanisms(){
+  return mechanisms.length ? mechanisms : DEFAULT_MECHANISMS;
+}
+
+function getActiveMechanismNames(){
+  return getActiveMechanisms().map(m=>normalizeSubName(m.name));
+}
+
+function normalizeFocusSubs(raw){
+  const activeNames=getActiveMechanismNames();
+  const activeSet=new Set(activeNames);
+  const input=Array.isArray(raw)?raw:[raw];
+  const picked=[];
+  input.forEach(v=>{
+    const name=normalizeSubName(String(v??'').trim());
+    if(!name || !activeSet.has(name)) return;
+    if(!picked.includes(name)) picked.push(name);
+  });
+
+  if(!picked.length){
+    LEGACY_FOCUS_SUBS.forEach(name=>{
+      const n=normalizeSubName(name);
+      if(activeSet.has(n) && !picked.includes(n)) picked.push(n);
+    });
+    if(!picked.length && activeNames[0]) picked.push(activeNames[0]);
+    if(picked.length===1){
+      const second=activeNames.find(n=>n!==picked[0]);
+      if(second) picked.push(second);
+    }
+  }
+  return picked.slice(0,2);
+}
+
+function getFocusSubs(){
+  if(!focusSubs.length) focusSubs=normalizeFocusSubs([]);
+  return focusSubs;
+}
+
+function sameStringArray(a,b){
+  if(a.length!==b.length) return false;
+  for(let i=0;i<a.length;i++){ if(a[i]!==b[i]) return false; }
+  return true;
+}
+
+function saveSettings(){
+  localStorage.setItem(SETTINGS_KEY,JSON.stringify({
+    lang,
+    mechanisms:getActiveMechanisms(),
+    focusSubs:getFocusSubs(),
+  }));
+}
+
+function loadSettings(){
+  let raw={};
+  try{
+    raw=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')||{};
+  }catch{
+    raw={};
+  }
+  if(raw.lang==='en' || raw.lang==='nl' || raw.lang==='es') lang=raw.lang;
+  const parsed=sanitizeMechanisms(raw.mechanisms);
+  if(isLegacyPersonalDefaultList(parsed)){
+    mechanisms=DEFAULT_MECHANISMS.map(m=>({...m}));
+  }else{
+    mechanisms = parsed.length ? parsed : DEFAULT_MECHANISMS.map(m=>({...m}));
+  }
+  focusSubs=normalizeFocusSubs(raw.focusSubs ?? raw.focusMechanisms ?? raw.focusTracker?.mechanisms);
+}
+
+function parseMechanismLine(line){
+  const trimmed=line.trim();
+  if(!trimmed) return null;
+  if(trimmed.includes('|')){
+    const [e,n]=trimmed.split('|');
+    const name=(n||'').trim();
+    if(!name) return null;
+    return {emoji:(e||'⚡').trim()||'⚡',name,unit:'entry'};
+  }
+  const m=trimmed.match(/^(\S+)\s+(.+)$/u);
+  if(m){
+    return {emoji:m[1],name:m[2].trim(),unit:'entry'};
+  }
+  return {emoji:'⚡',name:trimmed,unit:'entry'};
+}
+
+function mechanismsToText(){
+  return getActiveMechanisms().map(m=>`${m.emoji} ${m.name}`).join('\n');
+}
+
+function refreshMechanismsEditor(){
+  const el=document.getElementById('mechanismsText');
+  if(el) el.value=mechanismsToText();
+}
+
+function refreshFocusTrackerSettingsUI(){
+  const sel1=document.getElementById('focusSub1Select');
+  const sel2=document.getElementById('focusSub2Select');
+  if(!sel1 || !sel2) return;
+  const active=getActiveMechanisms();
+  const selected=getFocusSubs();
+  const options1=active.map(m=>`<option value="${m.name}">${m.emoji} ${m.name}</option>`).join('');
+  const options2=[
+    `<option value="">${t('data.none')}</option>`,
+    ...active.map(m=>`<option value="${m.name}">${m.emoji} ${m.name}</option>`)
+  ].join('');
+  sel1.innerHTML=options1;
+  sel2.innerHTML=options2;
+  sel1.value=selected[0] || (active[0]?.name||'');
+  sel2.value=selected[1] || '';
+}
+
+function saveFocusTrackerFromSettings(){
+  const sel1=document.getElementById('focusSub1Select');
+  const sel2=document.getElementById('focusSub2Select');
+  if(!sel1 || !sel2) return;
+  const next=normalizeFocusSubs([sel1.value,sel2.value]);
+  if(!next.length){ showToast(t('toast.focusInvalid')); return; }
+  focusSubs=next;
+  saveSettings();
+  refreshFocusTrackerSettingsUI();
+  if(currentTab==='stats') renderStats();
+  showToast(t('toast.focusSaved'));
+}
+
+function saveMechanismsFromEditor(){
+  const el=document.getElementById('mechanismsText');
+  if(!el) return;
+  const parsed=el.value.split('\n').map(parseMechanismLine).filter(Boolean);
+  const clean=sanitizeMechanisms(parsed);
+  if(!clean.length){ showToast(t('toast.mechanismsInvalid')); return; }
+  mechanisms=clean;
+  focusSubs=normalizeFocusSubs(focusSubs);
+  saveSettings();
+  refreshMechanismsEditor();
+  refreshFocusTrackerSettingsUI();
+  buildSubstanceGrid();
+  buildGoalSubSelect();
+  if(currentTab==='history') renderHistory();
+  if(currentTab==='stats') renderStats();
+  showToast(t('toast.mechanismsSaved'));
+}
+
+function resetMechanismsToDefault(){
+  mechanisms=DEFAULT_MECHANISMS.map(m=>({...m}));
+  focusSubs=normalizeFocusSubs(focusSubs);
+  saveSettings();
+  refreshMechanismsEditor();
+  refreshFocusTrackerSettingsUI();
+  buildSubstanceGrid();
+  buildGoalSubSelect();
+  if(currentTab==='history') renderHistory();
+  if(currentTab==='stats') renderStats();
+  showToast(t('toast.mechanismsReset'));
+}
+
+function subByName(n){
+  const normalized = normalizeSubName(n);
+  return getActiveMechanisms().find(s=>s.name===normalized)||{emoji:'⚡',unit:'entry'};
+}
+
+function normalizeRecordMechanismItem(item){
+  if(!item) return null;
+  let name='',emoji='⚡',unit='entry',amount=1;
+  if(typeof item==='string'){
+    name=normalizeSubName(item.trim());
+  }else if(typeof item==='object'){
+    name=normalizeSubName(String(item.name ?? item.sustancia ?? item.mechanism ?? '').trim());
+    emoji=String(item.emoji ?? item.icon ?? '⚡').trim() || '⚡';
+    unit=String(item.unit ?? item.unidad ?? 'entry').trim() || 'entry';
+    const rawAmount=Number(item.amount ?? item.cantidad ?? 1);
+    amount=Number.isFinite(rawAmount) ? rawAmount : 1;
+  }
+  if(!name) return null;
+  const meta=subByName(name);
+  return {name,emoji:emoji||meta.emoji,unit:unit||meta.unit||'entry',amount};
+}
+
+function getRecordMechanisms(record){
+  const fromArray=Array.isArray(record?.mechanisms) ? record.mechanisms : [];
+  const normalized=fromArray.map(normalizeRecordMechanismItem).filter(Boolean);
+  if(normalized.length){
+    const unique=[];
+    normalized.forEach(m=>{ if(!unique.some(u=>u.name===m.name)) unique.push(m); });
+    return unique;
+  }
+  const fallback=normalizeRecordMechanismItem({
+    name: record?.sustancia ?? record?.mechanism ?? '',
+    emoji: record?.emoji,
+    unit: record?.unidad ?? record?.unit ?? 'entry',
+    amount: record?.cantidad ?? record?.amount ?? 1,
+  });
+  return fallback ? [fallback] : [];
+}
+
+function getRecordMechanismNames(record){
+  return getRecordMechanisms(record).map(m=>m.name);
+}
+
+function getRecordPrimaryMechanism(record){
+  return getRecordMechanisms(record)[0] || null;
+}
+
+function recordHasMechanism(record,name){
+  const target=normalizeSubName(name);
+  return getRecordMechanismNames(record).includes(target);
+}
+
+function recordHasAnyMechanism(record,names){
+  return names.some(name=>recordHasMechanism(record,name));
+}
+
+/* ══ STORAGE ══ */
+const RECORDS_KEY='records';
+const LEGACY_RECORDS_KEY='registros';
+
+function parseArraySafely(raw){
+  try{
+    const parsed=JSON.parse(raw||'[]');
+    return Array.isArray(parsed) ? parsed : [];
+  }catch{
+    return [];
+  }
+}
+
+function migrateLegacyRecordsIfNeeded(){
+  const hasNew=localStorage.getItem(RECORDS_KEY);
+  const hasLegacy=localStorage.getItem(LEGACY_RECORDS_KEY);
+  if(!hasNew && hasLegacy){
+    const legacy=parseArraySafely(hasLegacy);
+    const migrated=legacy.map(toExternalRecord).filter(Boolean);
+    localStorage.setItem(RECORDS_KEY,JSON.stringify(migrated));
+    localStorage.removeItem(LEGACY_RECORDS_KEY);
+    return;
+  }
+  if(!hasNew) return;
+  const current=parseArraySafely(hasNew);
+  if(!current.length) return;
+  const normalized=current.map(toInternalRecord).filter(Boolean).map(toExternalRecord);
+  const currentJson=JSON.stringify(current);
+  const normalizedJson=JSON.stringify(normalized);
+  if(currentJson!==normalizedJson){
+    localStorage.setItem(RECORDS_KEY,normalizedJson);
+  }
+  if(hasLegacy) localStorage.removeItem(LEGACY_RECORDS_KEY);
+}
+
+const store = {
+  getAll: ()=>{
+    migrateLegacyRecordsIfNeeded();
+    const external=parseArraySafely(localStorage.getItem(RECORDS_KEY));
+    return external.map(toInternalRecord).filter(Boolean);
+  },
+  save: (legacyRecords)=>{
+    const list=Array.isArray(legacyRecords)?legacyRecords:[];
+    const external=list.map(toExternalRecord).filter(Boolean);
+    localStorage.setItem(RECORDS_KEY,JSON.stringify(external));
+    localStorage.removeItem(LEGACY_RECORDS_KEY);
+  },
+  getGoals: ()=>parseArraySafely(localStorage.getItem('goals')).map(g=>({
+    ...g,
+    sub: normalizeSubName(g.sub)
+  })),
+  saveGoals: (a)=>localStorage.setItem('goals',JSON.stringify(a)),
+};
+
+/* ══ NAV ══ */
+const TABS = {
+  add:     {screen:'screenAdd'},
+  history: {screen:'screenHistory', dock:'dockHistory'},
+  stats:   {screen:'screenStats',   dock:'dockStats'},
+  data:    {screen:'screenData',    dock:'dockData'},
+};
+const TAB_ORDER = ['stats','history','data','add'];
+let currentTab  = 'stats';
+
+function switchTab(tab) {
+  if(tab===currentTab) return;
+  const fromIdx  = TAB_ORDER.indexOf(currentTab);
+  const toIdx    = TAB_ORDER.indexOf(tab);
+  const dir      = toIdx>fromIdx?'right':'left';
+  const leaving  = document.getElementById(TABS[currentTab].screen);
+  const entering = document.getElementById(TABS[tab].screen);
+  ['slide-in-right','slide-in-left','slide-out-right','slide-out-left'].forEach(c=>{
+    leaving.classList.remove(c); entering.classList.remove(c);
+  });
+  leaving.classList.add(dir==='right'?'slide-out-left':'slide-out-right');
+  entering.classList.add('active', dir==='right'?'slide-in-right':'slide-in-left');
+  setTimeout(()=>{
+    leaving.classList.remove('active','slide-out-left','slide-out-right');
+    entering.classList.remove('slide-in-right','slide-in-left');
+  }, 270);
+  const fromDock=TABS[currentTab].dock?document.getElementById(TABS[currentTab].dock):null;
+  const toDock=TABS[tab].dock?document.getElementById(TABS[tab].dock):null;
+  if(toDock){
+    if(fromDock) fromDock.classList.remove('active');
+    toDock.classList.add('active');
+  }
+  currentTab = tab;
+  if(tab==='add')     initAddFlow();
+  if(tab==='history') renderHistory();
+  if(tab==='stats')   renderStats();
+}
+
+function openAddFlow(){
+  switchTab('add');
+}
+
+/* ══ TOAST ══ */
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ══ PREVIEW QUICKLOOK (OPTIMIZADO PARA WKWEBVIEW) ══ */
+let currentPreviewContent = '';
+
+function showPreview(filename, contentType, contentStr) {
+  currentPreviewContent = contentStr;
+
+  const preview = document.createElement('div');
+  preview.id = 'previewScreen';
+
+  let innerHTML = '';
+  if (contentType === 'json') {
+    const escaped = contentStr
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    innerHTML = `<pre>${escaped}</pre>`;
+  } else if (contentType === 'csv') {
+    const lines = contentStr.trim().split('\n');
+    let table = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">';
+    if (lines.length > 0) {
+      const headers = lines[0].split(',').map(cell => cell.trim().replace(/^"|"$/g,'').replace(/""/g,'"'));
+      table += '<thead><tr>' + headers.map(h => `<th style="padding:10px 8px;background:var(--bg2);text-align:left;font-weight:600;border-bottom:2px solid var(--border);">${h}</th>`).join('') + '</tr></thead><tbody>';
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const cells = lines[i].split(',').map(cell => cell.trim().replace(/^"|"$/g,'').replace(/""/g,'"'));
+        table += '<tr>' + cells.map(c => `<td style="padding:10px 8px;border-top:1px solid var(--border2);">${c}</td>`).join('') + '</tr>';
+      }
+      table += '</tbody></table>';
+    }
+    innerHTML = table;
+  }
+
+  preview.innerHTML = `
+    <div class="preview-header">
+      <button onclick="closePreview()" style="background:none;border:none;font-size:1.6rem;color:var(--muted);margin-right:12px;">←</button>
+      <div style="flex:1;text-align:center;font-weight:700;font-size:1.05rem;color:var(--text);">${filename}</div>
+      <button onclick="copyPreviewContent()" style="background:var(--accent-dim);color:var(--accent);border:none;padding:8px 16px;border-radius:9999px;font-size:0.82rem;font-weight:600;">${t('preview.copy')}</button>
+    </div>
+    <div class="preview-content">
+      ${innerHTML}
+    </div>
+    <div class="preview-footer">
+      <button onclick="closePreview()" class="btn btn-primary btn-full">${t('preview.close')}</button>
+      <p style="text-align:center;font-size:0.72rem;color:var(--muted);margin-top:12px;">
+        ${t('preview.helper')}
+      </p>
+    </div>
+  `;
+
+  document.body.appendChild(preview);
+}
+
+function closePreview() {
+  const el = document.getElementById('previewScreen');
+  if (el) el.remove();
+}
+
+function copyPreviewContent() {
+  if (!currentPreviewContent) return;
+  navigator.clipboard.writeText(currentPreviewContent).then(() => {
+    showToast(t('toast.copied'));
+  }).catch(() => {
+    showToast(t('toast.copyError'));
+  });
+}
+
+/* ══ ADD FLOW ══ */
+let selectedSubs=[], cravingLevel=5, pendingData={};
+
+function initAddFlow(){
+  ['s2','s3','s4','s5','s6','sSuccess'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('s1').style.display='';
+  selectedSubs=[]; cravingLevel=5;
+  document.getElementById('triggerInput').value='';
+  document.getElementById('motivo').value='';
+  updateCravingUI(); buildSubstanceGrid();
+  const tz=new Date().getTimezoneOffset()*60000;
+  document.getElementById('fechaHora').value=new Date(Date.now()-tz).toISOString().slice(0,16);
+}
+
+function buildSubstanceGrid(){
+  document.getElementById('substanceGrid').innerHTML=getActiveMechanisms().map(s=>`
+    <div class="sub-option ${selectedSubs.includes(s.name)?'selected':''}" onclick="toggleSub('${encodeURIComponent(s.name)}')">
+      <span class="sub-emoji">${s.emoji}</span>
+      <span class="sub-name">${s.name}</span>
+    </div>`).join('');
+}
+
+function toggleSub(encodedName){
+  const name=decodeURIComponent(encodedName);
+  if(selectedSubs.includes(name)){
+    selectedSubs=selectedSubs.filter(n=>n!==name);
+  }else{
+    selectedSubs=[...selectedSubs,name];
+  }
+  buildSubstanceGrid();
+}
+
+function goStep(from,to){
+  if(to>from){
+    if(from===1&&!document.getElementById('fechaHora').value){showToast(t('add.warnDate'));return;}
+    if(from===2&&!selectedSubs.length){showToast(t('add.warnSub'));return;}
+    if(from===3&&!document.getElementById('triggerInput').value.trim()){showToast(t('add.warnTrigger'));return;}
+  }
+  if(to===6) buildSummary();
+  document.getElementById('s'+from).style.display='none';
+  if(to<=6) document.getElementById('s'+to).style.display='';
+}
+
+function buildSummary(){
+  const selectedMechanisms=selectedSubs.map(name=>{
+    const sub=subByName(name);
+    return { sustancia:name, emoji:sub.emoji, cantidad:1, unidad:'entry' };
+  });
+  pendingData={
+    fechaHora: document.getElementById('fechaHora').value,
+    mechanisms: selectedMechanisms,
+    trigger:   document.getElementById('triggerInput').value.trim(),
+    craving:cravingLevel,
+    motivo:    document.getElementById('motivo').value.trim(),
+  };
+  const locale = t('locale');
+  const mechanismsLabel=selectedMechanisms.map(m=>`${m.emoji} ${m.sustancia}`).join(', ');
+  const rows=[
+    [t('add.sumWhen'),   new Date(pendingData.fechaHora).toLocaleString(locale,{dateStyle:'medium',timeStyle:'short'})],
+    [t('add.sumWhat'),   mechanismsLabel],
+    [t('add.sumTrigger'),pendingData.trigger],
+    [t('add.sumCraving'),`${pendingData.craving} / 10`],
+    [t('add.sumReason'), pendingData.motivo||'—'],
+  ];
+  document.getElementById('summaryRows').innerHTML=rows.map(([k,v])=>
+    `<div class="summary-row"><span class="summary-key">${k}</span><span class="summary-val">${v}</span></div>`
+  ).join('');
+}
+
+function guardar(){
+  const all=store.getAll();
+  const sharedRecord={
+    id:crypto.randomUUID(),
+    ts:Date.now(),
+    fechaHora: pendingData.fechaHora,
+    mechanisms:(pendingData.mechanisms||[]).map(m=>({
+      name:m.sustancia,
+      emoji:m.emoji,
+      unit:m.unidad ?? 'entry',
+      amount:m.cantidad ?? 1,
+    })),
+    sustancia: pendingData.mechanisms?.[0]?.sustancia ?? '',
+    emoji: pendingData.mechanisms?.[0]?.emoji ?? '⚡',
+    cantidad: 1,
+    unidad: 'entry',
+    trigger: pendingData.trigger,
+    craving: pendingData.craving,
+    motivo: pendingData.motivo,
+  };
+  all.push(sharedRecord);
+  store.save(all);
+  document.getElementById('s6').style.display='none';
+  document.getElementById('sSuccess').style.display='';
+}
+
+/* ══ CRAVING ══ */
+function cravingClass(n){ return n<=3?'low':n<=6?'mid':'high'; }
+
+function updateCravingUI(){
+  document.querySelectorAll('.craving-btn').forEach(b=>{
+    const v=parseInt(b.dataset.v);
+    b.classList.toggle('active',v===cravingLevel);
+    b.classList.remove('low','mid','high');
+    if(v===cravingLevel) b.classList.add(cravingClass(v));
+  });
+  const d=document.getElementById('cravingDisplay');
+  d.textContent=cravingLevel;
+  d.className=`craving-display ${cravingClass(cravingLevel)}`;
+}
+
+function buildCravingGrid(){
+  const grid=document.getElementById('cravingGrid');
+  grid.innerHTML='';
+  for(let i=0;i<=10;i++){
+    const b=document.createElement('div');
+    b.className='craving-btn'; b.dataset.v=i; b.textContent=i;
+    b.onclick=()=>{cravingLevel=i;updateCravingUI();};
+    grid.appendChild(b);
+  }
+  updateCravingUI();
+}
+
+/* ════════════════════════════════════════
+   HOME — METAS
+════════════════════════════════════════ */
+let goalTimers=[], selectedGoalIdx=0;
+let selectedTimeUnit='hours';
+
+function selectTimeUnit(unit){
+  selectedTimeUnit=unit;
+  document.querySelectorAll('.tus-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.unit===unit);
+  });
+  document.getElementById('goalAmountLabel').textContent=`${t('home.amountOf')} ${t('home.'+unit+'Lbl')}`;
+  const placeholders={hours:'24',days:'7',weeks:'4'};
+  document.getElementById('goalAmountInput').placeholder=placeholders[unit];
+}
+
+function buildGoalSubSelect(){
+  document.getElementById('goalSubSelect').innerHTML=getActiveMechanisms().map(s=>
+    `<option value="${s.name}">${s.emoji} ${s.name}</option>`
+  ).join('');
+}
+
+function toggleAddGoalForm(){
+  document.getElementById('addGoalForm').classList.toggle('hidden');
+}
+
+function toHours(amount, unit){
+  if(unit==='hours') return amount;
+  if(unit==='days')  return amount*24;
+  if(unit==='weeks') return amount*24*7;
+  return amount;
+}
+
+function addGoal(){
+  const sub    = document.getElementById('goalSubSelect').value;
+  const amount = parseInt(document.getElementById('goalAmountInput').value);
+  if(!amount||amount<1){ showToast(t('toast.noGoalAmount')); return; }
+  if(!store.getAll().filter(r=>recordHasMechanism(r,sub)).length){
+    showToast(t('toast.noGoalRecords',{sub})); return;
+  }
+  const hours  = toHours(amount, selectedTimeUnit);
+  const goals  = store.getGoals();
+  const idx    = goals.findIndex(g=>g.sub===sub);
+  const ng = { id:crypto.randomUUID(), sub, hours, displayAmount:amount, displayUnit:selectedTimeUnit };
+  if(idx>=0) goals[idx]=ng; else goals.push(ng);
+  store.saveGoals(goals);
+  document.getElementById('addGoalForm').classList.add('hidden');
+  document.getElementById('goalAmountInput').value='';
+  selectedGoalIdx=0;
+  renderHome();
+}
+
+function deleteGoal(id){
+  store.saveGoals(store.getGoals().filter(g=>g.id!==id));
+  selectedGoalIdx=0; renderHome();
+}
+
+function formatGoalTarget(goal){
+  const n=goal.displayAmount;
+  if(goal.displayUnit==='weeks') return `${n} ${t('home.weeksLbl')}`;
+  if(goal.displayUnit==='days')  return `${n} ${t('home.daysLbl')}`;
+  return `${n} ${t('home.hoursLbl')}`;
+}
+
+function goalState(goal){
+  const regs   = store.getAll().filter(r=>recordHasMechanism(r,goal.sub));
+  const latest = regs.length ? Math.max(...regs.map(r=>new Date(r.fechaHora).getTime())) : null;
+  if(!latest) return {valid:false};
+  const diffMs    = Date.now() - latest;
+  const totalMins = Math.floor(diffMs/60000);
+  const totalHrs  = diffMs / 3600000;
+  const goalHours = goal.hours || (goal.days ? goal.days*24 : 0);
+  const d = Math.floor(totalMins/1440);
+  const h = Math.floor((totalMins%1440)/60);
+  const m = totalMins % 60;
+  const pct  = Math.min(100, Math.round((totalHrs/goalHours)*100));
+  const done = pct>=100;
+  return {valid:true, d, h, m, pct, done, latest, totalHrs, goalHours};
+}
+
+function drawFitnessRings(canvas, goalsData){
+  const dpr=window.devicePixelRatio||1;
+  const SIZE=canvas._cssSize||180;
+  canvas.width=SIZE*dpr; canvas.height=SIZE*dpr;
+  canvas.style.width=SIZE+'px'; canvas.style.height=SIZE+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.scale(dpr,dpr);
+  const cx=SIZE/2, cy=SIZE/2, GAP=7, LW=9;
+  goalsData.forEach((g,i)=>{
+    const R=cx-LW/2-i*(LW+GAP);
+    if(R<LW) return;
+    const color=RING_COLORS[i%RING_COLORS.length];
+    const remaining=Math.max(0,1-g.pct/100);
+    const startA=-Math.PI/2;
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.strokeStyle=`${color}22`; ctx.lineWidth=LW; ctx.stroke();
+    if(remaining>0){
+      const endA=startA+remaining*Math.PI*2;
+      ctx.beginPath(); ctx.arc(cx,cy,R,startA,endA);
+      ctx.strokeStyle=color; ctx.lineWidth=LW; ctx.lineCap='round';
+      ctx.shadowColor=color; ctx.shadowBlur=10; ctx.stroke();
+      ctx.shadowBlur=0; ctx.lineCap='butt';
+    }
+    const capX=cx+R*Math.cos(startA), capY=cy+R*Math.sin(startA);
+    ctx.beginPath(); ctx.arc(capX,capY,LW/2,0,Math.PI*2);
+    ctx.fillStyle=remaining>0.005?color:'transparent'; ctx.fill();
+  });
+}
+
+function renderHome(){
+  goalTimers.forEach(clearInterval); goalTimers=[];
+  const hr=new Date().getHours();
+  document.getElementById('greetingTime').textContent =
+    hr<12 ? t('home.greeting.morning') : hr<19 ? t('home.greeting.afternoon') : t('home.greeting.evening');
+  document.getElementById('greetingTitle').innerHTML = t('home.greeting.title');
+
+  const goals=store.getGoals();
+  const container=document.getElementById('fitnessCard');
+  const detailEl=document.getElementById('goalDetailCard');
+
+  if(!goals.length){
+    container.innerHTML=`
+      <div class="fitness-card empty-card">
+        <div style="font-size:2rem;opacity:.2;">◎</div>
+        <p style="font-size:.82rem;color:var(--muted);">${t('home.noGoals')}</p>
+      </div>`;
+    detailEl.classList.add('hidden'); detailEl.innerHTML=''; return;
+  }
+
+  const states=goals.map(g=>goalState(g));
+  const N=Math.min(goals.length,RING_COLORS.length);
+  const LW=9,GAP=7;
+  const SIZE=LW+(N-1)*(LW+GAP)+LW;
+  const CANVAS_SIZE=Math.max(SIZE*2+20,160);
+
+  container.innerHTML=`
+    <div class="fitness-card" id="fitnessCardInner">
+      <div class="rings-canvas-wrap"><canvas id="ringsCanvas"></canvas></div>
+      <div class="rings-legend" id="ringsLegend"></div>
+    </div>`;
+
+  const canvas=document.getElementById('ringsCanvas');
+  canvas._cssSize=CANVAS_SIZE;
+
+  function renderLegend(st){
+    const legend=document.getElementById('ringsLegend');
+    if(!legend) return;
+    legend.innerHTML=goals.map((g,i)=>{
+      if(i>=RING_COLORS.length) return '';
+      const s=st[i], color=RING_COLORS[i%RING_COLORS.length], sub=subByName(g.sub);
+      const timeStr=s.valid
+        ?`${s.d}${t('home.dLbl')[0]} ${String(s.h).padStart(2,'0')}${t('home.hLbl')[0]} ${String(s.m).padStart(2,'0')}${t('home.mLbl')[0]}`
+        : t('home.noRecords');
+      const pctStr=s.valid?`${s.pct}%`:'—';
+      const isSel=i===selectedGoalIdx;
+      return `
+        <div class="ring-legend-item" onclick="selectGoal(${i})" style="opacity:${isSel?1:.5}">
+          <div class="ring-legend-dot" style="background:${color}"></div>
+          <div class="ring-legend-info">
+            <div class="ring-legend-name">${sub.emoji} ${g.sub}</div>
+            <div class="ring-legend-time">${timeStr}</div>
+          </div>
+          <div class="ring-legend-pct" style="color:${color}">${pctStr}</div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderDetail(st){
+    if(selectedGoalIdx>=goals.length) return;
+    const goal=goals[selectedGoalIdx], s=st[selectedGoalIdx];
+    const sub=subByName(goal.sub), color=RING_COLORS[selectedGoalIdx%RING_COLORS.length];
+    const targetStr=formatGoalTarget(goal);
+
+    if(!s.valid){
+      detailEl.classList.remove('hidden');
+      detailEl.innerHTML=`
+        <div class="gdc-header">
+          <div class="gdc-sub">
+            <div class="gdc-emoji" style="background:${color}22">${sub.emoji}</div>
+            <div class="gdc-name">${goal.sub}</div>
+          </div>
+          <div class="gdc-delete" onclick="deleteGoal('${goal.id}')">✕</div>
+        </div>
+        <p style="font-size:.78rem;color:var(--muted);">${t('home.noRecords')}.</p>`;
+      return;
+    }
+
+    detailEl.classList.remove('hidden');
+    detailEl.innerHTML=`
+      <div class="gdc-header">
+        <div class="gdc-sub">
+          <div class="gdc-emoji" style="background:${color}22">${sub.emoji}</div>
+          <div class="gdc-name">${goal.sub}</div>
+        </div>
+        <div class="gdc-delete" onclick="deleteGoal('${goal.id}')">✕</div>
+      </div>
+      <div class="gdc-time-row">
+        <div class="gdc-time-unit">
+          <div class="num" id="gdc-d">${s.d}</div><div class="lbl">${t('home.dLbl')}</div>
+        </div>
+        <div class="gdc-time-unit">
+          <div class="num" id="gdc-h">${String(s.h).padStart(2,'0')}</div><div class="lbl">${t('home.hLbl')}</div>
+        </div>
+        <div class="gdc-time-unit">
+          <div class="num" id="gdc-m">${String(s.m).padStart(2,'0')}</div><div class="lbl">${t('home.mLbl')}</div>
+        </div>
+      </div>
+      <div class="gdc-bar-bg">
+        <div class="gdc-bar-fill" id="gdc-bar"
+          style="width:${s.pct}%;background:${s.done?'var(--success)':color}"></div>
+      </div>
+      <div class="gdc-meta">
+        <span id="gdc-pct">${s.pct}%</span>
+        <span>${t('home.goalTarget')} ${targetStr}</span>
+      </div>
+      ${s.done?`<div class="gdc-done-badge">${t('home.goalDone')}</div>`:''}`;
+  }
+
+  drawFitnessRings(canvas, states.map(s=>({pct:s.valid?s.pct:0})));
+  renderLegend(states); renderDetail(states);
+
+  const tick=()=>{
+    const fresh=goals.map(g=>goalState(g));
+    drawFitnessRings(canvas, fresh.map(s=>({pct:s.valid?s.pct:0})));
+    renderLegend(fresh);
+    const dEl=document.getElementById('gdc-d');
+    if(dEl&&selectedGoalIdx<fresh.length){
+      const s=fresh[selectedGoalIdx];
+      if(s.valid){
+        document.getElementById('gdc-d').textContent=s.d;
+        document.getElementById('gdc-h').textContent=String(s.h).padStart(2,'0');
+        document.getElementById('gdc-m').textContent=String(s.m).padStart(2,'0');
+        document.getElementById('gdc-bar').style.width=s.pct+'%';
+        document.getElementById('gdc-pct').textContent=s.pct+'%';
+      }
+    }
+  };
+  goalTimers.push(setInterval(tick,60000));
+}
+
+function selectGoal(idx){ selectedGoalIdx=idx; renderHome(); }
+
+/* ══ HISTORIAL ══ */
+let activeFilter='all';
+let historyDeleteKeys=[];
+
+function recordDeleteKey(r){
+  if(r && r.id) return `id:${r.id}`;
+  const ts=(r&&r.ts!=null)?String(r.ts):'';
+  const fh=(r&&r.fechaHora)?String(r.fechaHora):'';
+  const subs=getRecordMechanismNames(r).join(',');
+  const trig=(r&&r.trigger)?String(r.trigger):'';
+  const note=(r&&r.motivo)?String(r.motivo):'';
+  const crv=(r&&r.craving!=null)?String(r.craving):'';
+  return `fallback:${ts}|${fh}|${subs}|${trig}|${note}|${crv}`;
+}
+
+function renderHistory(){
+  const registros=store.getAll();
+  const subs=['all',...new Set(registros.flatMap(r=>getRecordMechanismNames(r)))];
+  document.getElementById('filterChips').innerHTML=subs.map(s=>
+    `<div class="chip ${s===activeFilter?'active':''}" onclick="setFilter('${encodeURIComponent(s)}')">
+      ${s==='all' ? t('history.all') : subByName(s).emoji+' '+s}
+    </div>`).join('');
+  if(activeFilter!=='all' && !subs.includes(activeFilter)) activeFilter='all';
+  let filtered=registros.filter(r=>activeFilter==='all'||recordHasMechanism(r,activeFilter));
+  filtered.sort((a,b)=>new Date(b.fechaHora)-new Date(a.fechaHora));
+  const list=document.getElementById('historialList');
+  if(!filtered.length){list.innerHTML=`<div class="empty"><div class="e-icon">🍃</div><p>${t('history.empty')}</p></div>`;return;}
+  const locale = t('locale');
+  historyDeleteKeys=[];
+  list.innerHTML=filtered.map((r,idx)=>{
+    const delKey=recordDeleteKey(r);
+    historyDeleteKeys[idx]=delKey;
+    const cls=cravingClass(r.craving);
+    const dots=Array.from({length:10},(_,i)=>`<div class="h-craving-dot ${i<r.craving?'on-'+cls:''}"></div>`).join('');
+    const fecha=new Date(r.fechaHora).toLocaleString(locale,{dateStyle:'medium',timeStyle:'short'});
+    const mechanisms=getRecordMechanisms(r);
+    const subLabel=mechanisms.map(m=>`${m.emoji} ${m.name}`).join(' • ');
+    return `
+    <div class="history-card">
+      <div class="h-top">
+        <span class="h-substance">${subLabel}</span>
+      </div>
+      <div class="h-date">📅 ${fecha}</div>
+      ${r.trigger?`<div class="h-motivo">🧨 ${r.trigger}</div>`:''}
+      <div class="h-craving-row">
+        <div class="h-craving-dots">${dots}</div>
+        <span style="font-size:.72rem;color:var(--muted);margin-left:3px;">${r.craving}/10</span>
+      </div>
+      ${r.motivo?`<div class="h-motivo">"${r.motivo}"</div>`:''}
+      <button type="button" class="h-delete" onclick="deleteRegByIndex(${idx})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function setFilter(encodedSub){
+  activeFilter=decodeURIComponent(encodedSub);
+  renderHistory();
+}
+
+function deleteRegByIndex(idx){
+  const key=historyDeleteKeys[idx];
+  if(!key) return;
+  deleteRegByKey(key);
+}
+
+function deleteRegByKey(key){
+  if(!confirm(t('history.deleteConfirm'))) return;
+  const all=store.getAll();
+  const updated=all.filter(r=>recordDeleteKey(r)!==key);
+  store.save(updated);
+  renderHistory();
+}
+
+/* ════════════════════════
+   STATS
+════════════════════════ */
+let statsRangeDays=7;
+
+function setStatsRange(days){
+  statsRangeDays=days;
+  document.querySelectorAll('.range-chip').forEach(c=>
+    c.classList.toggle('active',parseInt(c.dataset.days)===days)
+  );
+  renderStats();
+}
+
+function filterByRange(registros,days){
+  if(!days) return registros;
+  const cutoff=Date.now()-days*24*60*60*1000;
+  return registros.filter(r=>new Date(r.fechaHora).getTime()>=cutoff);
+}
+
+function renderStats(){
+  const hrNow=new Date().getHours();
+  const gt=document.getElementById('greetingTime');
+  const gtt=document.getElementById('greetingTitle');
+  if(gt&&gtt){
+    gt.textContent=hrNow<12?t('home.greeting.morning'):hrNow<19?t('home.greeting.afternoon'):t('home.greeting.evening');
+    gtt.innerHTML=t('home.greeting.title');
+  }
+  const all=store.getAll();
+  const filtered=filterByRange(all,statsRangeDays);
+  const total=filtered.length;
+  renderFirstUseGuide(all.length===0);
+
+  renderStreak(all);
+
+  const avgCraving=total?(filtered.reduce((a,r)=>a+parseFloat(r.craving),0)/total).toFixed(1):'—';
+  let freq={};
+  filtered.forEach(r=>{
+    getRecordMechanismNames(r).forEach(name=>{
+      freq[name]=(freq[name]||0)+1;
+    });
+  });
+  const masComun=Object.keys(freq).sort((a,b)=>freq[b]-freq[a])[0];
+  const masComSub=masComun?subByName(masComun):null;
+  const diasUnicos=new Set(filtered.map(r=>r.fechaHora.slice(0,10))).size;
+  const avgPerDay=diasUnicos?(total/diasUnicos).toFixed(1):'—';
+
+  const prevFiltered=statsRangeDays
+    ? filterByRange(all,statsRangeDays*2).filter(r=>{
+        const t2=new Date(r.fechaHora).getTime();
+        return t2<Date.now()-statsRangeDays*864e5;
+      })
+    : [];
+  const prevTotal=prevFiltered.length;
+  let trendHtml='';
+  if(statsRangeDays&&prevTotal>0){
+    const delta=total-prevTotal;
+    const sign=delta>0?'+':'';
+    const cls=delta>0?'trend-up':delta<0?'trend-down':'trend-flat';
+    const arrow=delta>0?'↑':delta<0?'↓':'→';
+    trendHtml=`<div class="trend ${cls}">${arrow} ${sign}${delta} ${t('stats.vsPrev')}</div>`;
+  }
+
+  document.getElementById('statGrid').innerHTML=`
+    <div class="stat-tile"><div class="n">${total}</div><div class="t">${t('stats.records')}</div>${trendHtml}</div>
+    <div class="stat-tile"><div class="n">${avgCraving}</div><div class="t">${t('stats.avgCraving')}</div></div>
+    <div class="stat-tile"><div class="n">${diasUnicos}</div><div class="t">${t('stats.activeDays')}</div></div>
+    <div class="stat-tile"><div class="n">${avgPerDay}</div><div class="t">${t('stats.recPerDay')}</div></div>
+    <div class="stat-tile wide"><div class="n" style="font-size:1.1rem">${masComSub?masComSub.emoji+' '+masComun:'—'}</div><div class="t">${t('stats.mostCommon')}</div></div>`;
+
+  renderFocusTracker(filtered);
+  renderHeatmap(filtered);
+  renderTimeOfDay(filtered);
+  drawLineChart(filtered);
+  renderSubStats(filtered,freq);
+}
+
+function renderFirstUseGuide(isFirstUse){
+  const card=document.getElementById('firstUseGuide');
+  if(!card) return;
+  if(!isFirstUse){
+    card.classList.add('hidden');
+    card.innerHTML='';
+    return;
+  }
+  card.classList.remove('hidden');
+  card.innerHTML=`
+    <div class="fug-title">💡 ${t('stats.firstUseTitle')}</div>
+    <div class="fug-body">${t('stats.firstUseBody')}</div>
+    <div class="fug-step">${t('stats.firstUseStepLog')}</div>
+    <div class="fug-step">${t('stats.firstUseStepSettings')}</div>
+  `;
+}
+
+function renderFocusTracker(filtered){
+  const card=document.getElementById('focusTrackerCard');
+  if(!card) return;
+  const selected=getFocusSubs();
+  const counts=Object.fromEntries(selected.map(name=>[name,0]));
+  const focus=filtered.filter(r=>{
+    const names=getRecordMechanismNames(r);
+    let hit=false;
+    names.forEach(n=>{
+      if(Object.prototype.hasOwnProperty.call(counts,n)){
+        counts[n]=(counts[n]||0)+1;
+        hit=true;
+      }
+    });
+    return hit;
+  });
+  const avg=focus.length?(focus.reduce((a,r)=>a+parseFloat(r.craving),0)/focus.length).toFixed(1):'—';
+  const noDataMsg=focus.length?'':`<div class="focus-meta" style="margin-top:8px">${t('stats.focusNoData')}</div>`;
+  const focusTiles=selected.map(name=>{
+    const sub=subByName(name);
+    return `<div class="focus-tile"><div class="n">${counts[name]||0}</div><div class="t">${sub.emoji} ${name}</div></div>`;
+  }).join('');
+  card.innerHTML=`
+    <div class="focus-sub">${t('stats.focusSub')}</div>
+    <div class="focus-grid">${focusTiles}</div>
+    <div class="focus-meta">${focus.length} ${pluralLabel('label.entry', focus.length)} • ${t('stats.avgCraving')}: ${avg}</div>
+    ${noDataMsg}`;
+}
+
+function localDateKey(dateObj){
+  const y=dateObj.getFullYear();
+  const m=String(dateObj.getMonth()+1).padStart(2,'0');
+  const d=String(dateObj.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+
+function recordDateKey(record){
+  const raw=(record&&record.fechaHora?String(record.fechaHora):'').trim();
+  const m=raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if(m) return m[1];
+  const dt=new Date(raw);
+  if(Number.isNaN(dt.getTime())) return null;
+  return localDateKey(dt);
+}
+
+function renderStreak(all){
+  const banner=document.getElementById('streakBanner');
+  if(!all.length){ banner.innerHTML=''; return; }
+  const datesWithReg=new Set(all.map(recordDateKey).filter(Boolean));
+  if(!datesWithReg.size){ banner.innerHTML=''; return; }
+  let streak=0;
+  const d=new Date(); d.setHours(0,0,0,0);
+  while(true){
+    const key=localDateKey(d);
+    if(datesWithReg.has(key)) break;
+    streak++;
+    d.setDate(d.getDate()-1);
+    if(streak>3650) break;
+  }
+  if(streak===0){ banner.innerHTML=''; return; }
+  banner.innerHTML=`
+    <div class="streak-banner">
+      <span class="sb-icon">🔥</span>
+      <div class="sb-text">
+        <div class="sb-n">${streak} ${pluralLabel('label.day', streak)}</div>
+        <div class="sb-l">${t('stats.streak')}</div>
+      </div>
+    </div>`;
+}
+
+function renderHeatmap(filtered){
+  const card=document.getElementById('heatmapCard');
+  const dayCount={};
+  filtered.forEach(r=>{ const k=r.fechaHora.slice(0,10); dayCount[k]=(dayCount[k]||0)+1; });
+  const today=new Date(); today.setHours(0,0,0,0);
+  const totalCols=13;
+  const startDate=new Date(today);
+  startDate.setDate(startDate.getDate()-(totalCols*7-1));
+  const dow=startDate.getDay();
+  startDate.setDate(startDate.getDate()-(dow===0?6:dow-1));
+  let maxCount=Math.max(1,...Object.values(dayCount));
+  const cols=[];
+  let cur=new Date(startDate);
+  while(cur<=today){
+    const col=[];
+    for(let d=0;d<7;d++){
+      const k=localDateKey(cur);
+      const count=dayCount[k]||0;
+      const level=count===0?0:count<=maxCount*.25?1:count<=maxCount*.5?2:count<=maxCount*.75?3:4;
+      const isFuture=cur>today;
+      col.push({k,count,level,future:isFuture,date:new Date(cur)});
+      cur.setDate(cur.getDate()+1);
+    }
+    cols.push(col);
+  }
+  const cellsHtml=cols.map(col=>
+    `<div class="heatmap-col">${col.map(c=>
+      `<div class="heatmap-cell ${c.future?'':c.level>0?'l'+c.level:''}"
+        title="${c.k}: ${c.count}"></div>`
+    ).join('')}</div>`
+  ).join('');
+  card.innerHTML=`
+    <div class="heatmap-title">${t('stats.activityByDay')}</div>
+    <div class="heatmap-scroll">
+      <div class="heatmap-grid">${cellsHtml}</div>
+    </div>
+    <div class="heatmap-legend">
+      <span>${t('stats.less')}</span>
+      <div class="hml-cell" style="background:var(--border2)"></div>
+      <div class="hml-cell" style="background:rgba(129,140,248,.25)"></div>
+      <div class="hml-cell" style="background:rgba(129,140,248,.5)"></div>
+      <div class="hml-cell" style="background:rgba(129,140,248,.75)"></div>
+      <div class="hml-cell" style="background:rgba(129,140,248,1)"></div>
+      <span>${t('stats.more')}</span>
+    </div>`;
+}
+
+function renderTimeOfDay(filtered){
+  const card=document.getElementById('todCard');
+  if(!filtered.length){ card.innerHTML=`<div class="empty" style="padding:20px"><p>${t('stats.noData')}</p></div>`; return; }
+  const blocks=Array(12).fill(0);
+  filtered.forEach(r=>{ const h=new Date(r.fechaHora).getHours(); blocks[Math.floor(h/2)]++; });
+  const maxB=Math.max(1,...blocks);
+  const peakIdx=blocks.indexOf(maxB);
+  const labels=['0h','2h','4h','6h','8h','10h','12h','14h','16h','18h','20h','22h'];
+  const barsHtml=blocks.map((v,i)=>`
+    <div class="tod-bar-wrap">
+      <div class="tod-bar ${i===peakIdx?'active':''}"
+        style="height:${Math.max(4,Math.round((v/maxB)*54))}px"></div>
+      <span class="tod-label">${labels[i]}</span>
+    </div>`).join('');
+  const peakLabel=`${labels[peakIdx]}–${(peakIdx*2+2)%24}h`;
+  card.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;">${t('stats.hourlyDist')}</span>
+      <span style="font-size:.72rem;color:var(--accent);font-weight:700;">${t('stats.peak')} ${peakLabel}</span>
+    </div>
+    <div class="tod-bars">${barsHtml}</div>`;
+}
+
+const MIN_PX_PER_DAY=28;
+
+function drawLineChart(registros){
+  const canvas=document.getElementById('lineChart');
+  const ctx=canvas.getContext('2d');
+  const wrap=document.getElementById('chartScrollWrap');
+  const containerW=wrap.parentElement.clientWidth-30;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(!registros.length){
+    canvas.width=containerW; canvas.height=150;
+    ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.font='12px -apple-system,sans-serif';
+    ctx.textAlign='center'; ctx.fillText(t('stats.noData'),containerW/2,75);
+    document.getElementById('chartLegend').innerHTML=''; return;
+  }
+  const dayMap={};
+  registros.forEach(r=>{
+    const d=r.fechaHora.slice(0,10);
+    if(!dayMap[d]) dayMap[d]={};
+    getRecordMechanismNames(r).forEach(name=>{
+      dayMap[d][name]=(dayMap[d][name]||0)+1;
+    });
+  });
+  const allDays=Object.keys(dayMap).sort();
+  const labels=[];
+  const start=new Date(allDays[0]),end=new Date(allDays[allDays.length-1]);
+  for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)) labels.push(d.toISOString().slice(0,10));
+  if(labels.length===1) labels.push(labels[0]);
+  const subs=[...new Set(registros.flatMap(r=>getRecordMechanismNames(r)))];
+  document.getElementById('chartLegend').innerHTML=subs.map((s,i)=>{
+    const sub=subByName(s);
+    return `<div class="legend-item"><div class="legend-dot" style="background:${LINE_COLORS[i%LINE_COLORS.length]}"></div><span>${sub.emoji} ${s}</span></div>`;
+  }).join('');
+  const padL=28,padR=14,padT=10,padB=24;
+  const neededW=padL+padR+(labels.length-1)*MIN_PX_PER_DAY;
+  const W=Math.max(containerW,neededW),H=150,chartW=W-padL-padR,chartH=H-padT-padB;
+  canvas.width=W; canvas.height=H; wrap.style.width=containerW+'px';
+  let maxVal=0;
+  subs.forEach(s=>labels.forEach(day=>{const v=(dayMap[day]&&dayMap[day][s])||0;if(v>maxVal)maxVal=v;}));
+  if(!maxVal) maxVal=1;
+  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=padT+(chartH/4)*i;ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(padL+chartW,y);ctx.stroke();ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font='8px -apple-system,sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(maxVal-(maxVal/4)*i),padL-4,y+3);}
+  const labelStep=Math.max(1,Math.ceil(labels.length/Math.floor(chartW/30)));
+  ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='8px -apple-system,sans-serif';ctx.textAlign='center';
+  labels.forEach((day,i)=>{if(i%labelStep===0||i===labels.length-1){const x=padL+(i/Math.max(labels.length-1,1))*chartW;ctx.fillText(day.slice(5),x,H-4);}});
+  subs.forEach((s,si)=>{
+    const color=LINE_COLORS[si%LINE_COLORS.length];
+    const points=labels.map((day,i)=>{const v=(dayMap[day]&&dayMap[day][s])||0;return{x:padL+(i/Math.max(labels.length-1,1))*chartW,y:padT+chartH-(v/maxVal)*chartH,v};});
+    ctx.save();ctx.globalAlpha=0.08;ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(points[0].x,padT+chartH);points.forEach(p=>ctx.lineTo(p.x,p.y));ctx.lineTo(points[points.length-1].x,padT+chartH);ctx.closePath();ctx.fill();ctx.restore();
+    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineJoin='round';ctx.lineCap='round';points.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.stroke();
+    points.forEach(p=>{if(p.v>0){ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='rgba(8,8,16,0.8)';ctx.lineWidth=1.5;ctx.stroke();}});
+  });
+}
+
+function renderSubStats(filtered,freq){
+  const list=document.getElementById('subStatsList');
+  const subs=Object.keys(freq).sort((a,b)=>freq[b]-freq[a]);
+  const maxFreq=subs.length?freq[subs[0]]:1;
+  if(!subs.length){list.innerHTML=`<div class="empty"><div class="e-icon">📊</div><p>${t('stats.noDataPeriod')}</p></div>`;return;}
+  list.innerHTML=subs.map((sName,si)=>{
+    const sub=subByName(sName),regs=filtered.filter(r=>recordHasMechanism(r,sName)),count=regs.length;
+    const avgC=(regs.reduce((a,r)=>a+parseFloat(r.craving),0)/count).toFixed(1);
+    const totalC=regs.reduce((a,r)=>{
+      const mech=getRecordMechanisms(r).find(m=>m.name===sName);
+      const amount=parseFloat(mech?.amount ?? 1);
+      return a+(Number.isFinite(amount)?amount:1);
+    },0);
+    const totalD=Number.isInteger(totalC)?totalC:totalC.toFixed(1);
+    const barColor=LINE_COLORS[si%LINE_COLORS.length],pct=Math.round((count/maxFreq)*100);
+    const avgNum=parseFloat(avgC),cravCls=avgNum<=3?'var(--success)':avgNum<=6?'var(--warning)':'var(--danger)';
+    return `
+    <div class="sub-stat-card" id="subcard-${si}">
+      <div class="sub-stat-tap" onclick="toggleSubCard(${si},'${encodeURIComponent(sName)}')">
+        <div class="sub-stat-header">
+          <div class="sub-stat-emoji">${sub.emoji}</div>
+          <div style="flex:1"><div class="sub-stat-name">${sName}</div><div class="sub-stat-count">${count} ${pluralLabel('label.entry', count)}</div></div>
+          <span class="sub-stat-chevron">▾</span>
+        </div>
+        <div class="sub-stat-metrics">
+          <div class="sub-metric"><div class="sm-n">${count}</div><div class="sm-l">${t('stats.times')}</div></div>
+          <div class="sub-metric"><div class="sm-n" style="color:${cravCls}">${avgC}</div><div class="sm-l">${t('stats.craving')}</div></div>
+          <div class="sub-metric"><div class="sm-n">${totalD}</div><div class="sm-l">${t('stats.total')} ${sub.unit}s</div></div>
+        </div>
+        <div class="sub-freq-bar-bg"><div class="sub-freq-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      </div>
+      <div class="sub-stat-detail" id="subdetail-${si}">
+        <div class="detail-divider">${t('stats.tendency')}</div>
+        <div class="detail-chart-wrap"><canvas id="detailChart-${si}"></canvas></div>
+        <div class="detail-divider">${t('stats.cravingDist')}</div>
+        <div class="craving-dist" id="cravingDist-${si}"></div>
+        <div id="intervalRow-${si}"></div>
+        <div class="detail-divider">${t('stats.latestRecs')}</div>
+        <div class="detail-reg-list" id="detailRegs-${si}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSubCard(idx,encodedName){
+  const sName=decodeURIComponent(encodedName);
+  const card=document.getElementById(`subcard-${idx}`),isOpen=card.classList.contains('expanded');
+  document.querySelectorAll('.sub-stat-card').forEach(c=>c.classList.remove('expanded'));
+  if(isOpen) return;
+  card.classList.add('expanded'); renderSubCardDetail(idx,sName);
+}
+
+function renderSubCardDetail(idx,sName){
+  const all=store.getAll(),filtered=filterByRange(all,statsRangeDays);
+  const regs=filtered.filter(r=>recordHasMechanism(r,sName)).sort((a,b)=>new Date(a.fechaHora)-new Date(b.fechaHora));
+  const sub=subByName(sName),color=LINE_COLORS[idx%LINE_COLORS.length];
+  drawDetailChart(idx,regs,color);
+  const low=regs.filter(r=>r.craving<=3).length,mid=regs.filter(r=>r.craving>=4&&r.craving<=6).length,high=regs.filter(r=>r.craving>=7).length,total=regs.length||1;
+  document.getElementById(`cravingDist-${idx}`).innerHTML=`
+    <div class="craving-dist-item low"><div class="cdn">${Math.round(low/total*100)}%</div><div class="cdl">${t('stats.low')}</div></div>
+    <div class="craving-dist-item mid"><div class="cdn">${Math.round(mid/total*100)}%</div><div class="cdl">${t('stats.mid')}</div></div>
+    <div class="craving-dist-item high"><div class="cdn">${Math.round(high/total*100)}%</div><div class="cdl">${t('stats.high')}</div></div>`;
+  let intervalHTML='';
+  if(regs.length>=2){
+    let totalMs=0;for(let i=1;i<regs.length;i++) totalMs+=new Date(regs[i].fechaHora)-new Date(regs[i-1].fechaHora);
+    const avgMs=totalMs/(regs.length-1),avgDays=avgMs/(1000*60*60*24);
+    const intervalStr=avgDays>=1?avgDays.toFixed(1)+' '+t('stats.days2'):(avgMs/(1000*60*60)).toFixed(1)+' '+t('stats.hours2');
+    intervalHTML=`<div style="background:var(--bg2);border-radius:10px;padding:9px 12px;margin-top:8px;display:flex;align-items:center;gap:10px;"><span style="font-size:1.1rem;">⏱️</span><div><div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">${t('stats.avgInterval')}</div><div style="font-size:.95rem;font-weight:800;color:var(--text);">${t('stats.every')} ${intervalStr}</div></div></div>`;
+  }
+  document.getElementById(`intervalRow-${idx}`).innerHTML=intervalHTML;
+  const last5=[...regs].reverse().slice(0,5);
+  const locale=t('locale');
+  document.getElementById(`detailRegs-${idx}`).innerHTML=last5.map(r=>{
+    const cls=cravingClass(r.craving),clsColor=cls==='low'?'var(--success)':cls==='mid'?'var(--warning)':'var(--danger)';
+    const fecha=new Date(r.fechaHora).toLocaleString(locale,{dateStyle:'short',timeStyle:'short'});
+    const mech=getRecordMechanisms(r).find(m=>m.name===sName);
+    const amount=mech?.amount ?? r.cantidad ?? 1;
+    const unit=mech?.unit ?? r.unidad ?? 'entry';
+    return `<div class="detail-reg-item"><div class="detail-reg-dot" style="background:${color}"></div><span class="detail-reg-date">${fecha}</span><span class="detail-reg-amount">${amount} ${unit}</span><span class="detail-reg-craving" style="color:${clsColor}">${r.craving}/10</span></div>`;
+  }).join('');
+}
+
+function drawDetailChart(idx,regs,color){
+  const canvas=document.getElementById(`detailChart-${idx}`);if(!canvas) return;
+  const ctx=canvas.getContext('2d'),wrap=canvas.parentElement;
+  const containerW=wrap.closest('.sub-stat-card').clientWidth-30;
+  if(!regs.length){canvas.width=containerW;canvas.height=80;ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';ctx.fillText(t('stats.noDataShort'),containerW/2,40);return;}
+  const dayMap={};regs.forEach(r=>{const d=r.fechaHora.slice(0,10);dayMap[d]=(dayMap[d]||0)+1;});
+  const allDays=Object.keys(dayMap).sort(),labels=[];
+  const start=new Date(allDays[0]),end=new Date(allDays[allDays.length-1]);
+  for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)) labels.push(d.toISOString().slice(0,10));
+  if(labels.length===1) labels.push(labels[0]);
+  const padL=20,padR=8,padT=6,padB=18,neededW=padL+padR+(labels.length-1)*MIN_PX_PER_DAY;
+  const W=Math.max(containerW,neededW),H=80,chartW=W-padL-padR,chartH=H-padT-padB;
+  canvas.width=W;canvas.height=H;wrap.style.width=containerW+'px';
+  let maxVal=Math.max(...labels.map(d=>dayMap[d]||0));if(!maxVal) maxVal=1;
+  ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;[0,.5,1].forEach(f=>{const y=padT+chartH*f;ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(padL+chartW,y);ctx.stroke();});
+  const labelStep=Math.max(1,Math.ceil(labels.length/Math.floor(chartW/26)));
+  ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font='7px -apple-system,sans-serif';ctx.textAlign='center';
+  labels.forEach((day,i)=>{if(i%labelStep===0||i===labels.length-1){const x=padL+(i/Math.max(labels.length-1,1))*chartW;ctx.fillText(day.slice(5),x,H-3);}});
+  const points=labels.map((day,i)=>{const v=dayMap[day]||0;return{x:padL+(i/Math.max(labels.length-1,1))*chartW,y:padT+chartH-(v/maxVal)*chartH,v};});
+  ctx.save();ctx.globalAlpha=0.1;ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(points[0].x,padT+chartH);points.forEach(p=>ctx.lineTo(p.x,p.y));ctx.lineTo(points[points.length-1].x,padT+chartH);ctx.closePath();ctx.fill();ctx.restore();
+  ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=1.8;ctx.lineJoin='round';ctx.lineCap='round';points.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.stroke();
+  points.forEach(p=>{if(p.v>0){ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='rgba(8,8,16,0.8)';ctx.lineWidth=1.2;ctx.stroke();}});
+}
+
+/* ══ DATOS — EXPORTACIÓN OPTIMIZADA PARA WKWEBVIEW (QUICKLOOK) ══ */
+function toExternalRecord(r){
+  const mechanisms=getRecordMechanisms(r).map(m=>({
+    name:m.name,
+    emoji:m.emoji,
+    unit:m.unit||'entry',
+    amount:m.amount ?? 1,
+  }));
+  const primary=mechanisms[0] || {};
+  return {
+    id: r.id ?? '',
+    dateTime: r.fechaHora ?? '',
+    mechanism: primary.name ?? r.sustancia ?? '',
+    mechanisms,
+    amount: primary.amount ?? r.cantidad ?? 1,
+    unit: primary.unit ?? r.unidad ?? 'entry',
+    trigger: r.trigger ?? '',
+    intensity: r.craving ?? 0,
+    note: r.motivo ?? '',
+    timestamp: r.ts ?? '',
+  };
+}
+
+function getShortcutBackupObject(){
+  const selectedFocus=getFocusSubs();
+  return {
+    version: 4,
+    exportedAt: new Date().toISOString(),
+    settings: {
+      lang,
+      mechanisms: getActiveMechanisms().map(m=>({name:m.name,emoji:m.emoji,unit:m.unit||'entry'})),
+      focusSubs: selectedFocus,
+      focusTracker: { mechanisms: selectedFocus },
+    },
+    entries: store.getAll().map(toExternalRecord),
+  };
+}
+
+function getShortcutBackupJSONString(pretty=true){
+  return JSON.stringify(getShortcutBackupObject(),null,pretty?2:0);
+}
+
+/*
+  Apple Shortcuts compatible helper.
+  Use in "Run JavaScript on Web Page":
+  completion(shortcutExportJSON());
+*/
+function shortcutExportJSON(){
+  return getShortcutBackupJSONString(true);
+}
+
+function toInternalRecord(r){
+  const fechaHora=(r.fechaHora ?? r.dateTime ?? '').toString().trim();
+  if(!fechaHora) return null;
+  const parsedMechanisms=getRecordMechanisms(r);
+  if(!parsedMechanisms.length) return null;
+  const primary=parsedMechanisms[0];
+  const rawCraving=parseFloat(r.craving ?? r.intensity ?? 5);
+  const craving=Number.isFinite(rawCraving)?Math.max(0,Math.min(10,rawCraving)):5;
+  const rawTs=Number(r.ts ?? r.timestamp ?? NaN);
+  return {
+    id: (r.id ?? '').toString().trim() || crypto.randomUUID(),
+    fechaHora,
+    mechanisms: parsedMechanisms,
+    sustancia: primary.name,
+    emoji: primary.emoji,
+    cantidad: primary.amount ?? 1,
+    unidad: primary.unit ?? 'entry',
+    trigger: (r.trigger ?? '').toString(),
+    craving,
+    motivo: (r.motivo ?? r.note ?? '').toString(),
+    ts: Number.isFinite(rawTs) ? rawTs : Date.now(),
+  };
+}
+
+function importSettings(payload){
+  if(!payload || typeof payload!=='object') return;
+  let changed=false;
+  if(payload.lang==='en' || payload.lang==='nl' || payload.lang==='es'){
+    lang=payload.lang;
+    localStorage.setItem('lang',lang);
+    changed=true;
+  }
+  const parsed=sanitizeMechanisms(payload.mechanisms);
+  if(parsed.length){
+    mechanisms=parsed;
+    changed=true;
+  }
+  const importedFocus=payload.focusSubs ?? payload.focusMechanisms ?? payload.focusTracker?.mechanisms;
+  if(importedFocus!==undefined){
+    const nextFocus=normalizeFocusSubs(importedFocus);
+    if(nextFocus.length && !sameStringArray(nextFocus,focusSubs)){
+      focusSubs=nextFocus;
+      changed=true;
+    }
+  }else{
+    const normalizedFocus=normalizeFocusSubs(focusSubs);
+    if(!sameStringArray(normalizedFocus,focusSubs)){
+      focusSubs=normalizedFocus;
+      changed=true;
+    }
+  }
+  if(changed){
+    saveSettings();
+    applyI18n();
+    refreshMechanismsEditor();
+    refreshFocusTrackerSettingsUI();
+    buildSubstanceGrid();
+    buildGoalSubSelect();
+  }
+}
+
+function deriveMechanismsFromRawEntries(entriesRaw){
+  if(!Array.isArray(entriesRaw)) return [];
+  const list=[];
+  entriesRaw.forEach(r=>{
+    if(!r || typeof r!=='object') return;
+    const mechanisms=getRecordMechanisms(r);
+    mechanisms.forEach(m=>{
+      const key=m.name.toLowerCase();
+      if(list.some(x=>x.name.toLowerCase()===key)) return;
+      list.push({name:m.name,emoji:m.emoji,unit:m.unit||'entry'});
+    });
+  });
+  return sanitizeMechanisms(list);
+}
+
+function coerceObjectArray(value){
+  if(Array.isArray(value)) return value;
+  if(typeof value==='string'){
+    try{
+      const parsed=JSON.parse(value);
+      if(Array.isArray(parsed)) return parsed;
+    }catch{}
+    return [];
+  }
+  if(!value || typeof value!=='object') return [];
+  const vals=Object.values(value);
+  if(!vals.length) return [];
+  return vals.every(v=>v && typeof v==='object') ? vals : [];
+}
+
+function isLikelyEntryObject(item){
+  if(!item || typeof item!=='object') return false;
+  const hasDate=('fechaHora' in item) || ('dateTime' in item);
+  const hasMechanism=('sustancia' in item) || ('mechanism' in item) || ('mechanisms' in item);
+  return hasDate && hasMechanism;
+}
+
+function isLikelyMechanismObject(item){
+  if(!item || typeof item!=='object') return false;
+  return ('name' in item) || ('label' in item) || ('title' in item);
+}
+
+function findNestedArray(root,predicate){
+  if(!root || typeof root!=='object') return [];
+  const seen=new Set();
+  const queue=[root];
+  while(queue.length){
+    const cur=queue.shift();
+    if(!cur || typeof cur!=='object' || seen.has(cur)) continue;
+    seen.add(cur);
+    for(const value of Object.values(cur)){
+      const arr=coerceObjectArray(value);
+      if(arr.length && arr.some(predicate)) return arr;
+      if(value && typeof value==='object') queue.push(value);
+    }
+  }
+  return [];
+}
+
+function extractEntriesArray(data){
+  if(Array.isArray(data) && data.some(isLikelyEntryObject)) return data;
+  if(!data || typeof data!=='object') return [];
+  const knownKeys=['entries','records','registros','logs','data','items','rows'];
+  for(const key of knownKeys){
+    const arr=coerceObjectArray(data[key]);
+    if(arr.length && arr.some(isLikelyEntryObject)) return arr;
+  }
+  return findNestedArray(data,isLikelyEntryObject);
+}
+
+function extractMechanismsArray(data){
+  if(!data || typeof data!=='object') return [];
+  const directCandidates=[
+    data.mechanisms,
+    data.settings && data.settings.mechanisms,
+    data.options && data.options.mechanisms,
+    data.profile && data.profile.mechanisms,
+    data.configuration && data.configuration.mechanisms,
+  ];
+  for(const candidate of directCandidates){
+    const arr=coerceObjectArray(candidate);
+    if(arr.length && arr.some(isLikelyMechanismObject)) return arr;
+  }
+  return findNestedArray(data,isLikelyMechanismObject);
+}
+
+function timestampForFilename(){
+  const d=new Date();
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  const h=String(d.getHours()).padStart(2,'0');
+  const min=String(d.getMinutes()).padStart(2,'0');
+  return `${y}-${m}-${day}_${h}-${min}`;
+}
+
+function downloadTextFile(filename,text,mime){
+  const blob=new Blob([text],{type:mime});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+}
+
+function exportJSON(){
+  const data=store.getAll();
+  if(!data.length){showToast(t('toast.noData'));return;}
+  const jsonStr=getShortcutBackupJSONString(true);
+  const filename=`badhabbitlog_backup_${timestampForFilename()}.json`;
+  downloadTextFile(filename,jsonStr,'application/json;charset=utf-8');
+  showToast(t('toast.jsonExported'));
+}
+
+function exportCSV(){
+  const data=store.getAll();
+  if(!data.length){showToast(t('toast.noData'));return;}
+  const headers=['id','dateTime','mechanism','mechanisms','amount','unit','trigger','intensity','note','timestamp'];
+  const rows=data.map(r=>{
+    const e=toExternalRecord(r);
+    const row={
+      ...e,
+      mechanisms:(e.mechanisms||[]).map(m=>m.name).join(' | ')
+    };
+    return headers.map(h=>`"${(row[h]??'').toString().replace(/"/g,'""')}"`).join(',');
+  });
+  const csv=[headers.join(','),...rows].join('\n');
+  const filename=`badhabbitlog_logs_${timestampForFilename()}.csv`;
+  downloadTextFile(filename,csv,'text/csv;charset=utf-8');
+  showToast(t('toast.csvExported'));
+}
+
+function parseImportData(rawText){
+  const data=JSON.parse(rawText);
+  const entriesRaw=extractEntriesArray(data);
+  if(!entriesRaw.length) throw new Error();
+  const settings=(data && typeof data==='object' && data.settings && typeof data.settings==='object')
+    ? {...data.settings}
+    : {};
+  if(data && typeof data==='object'){
+    if(data.focusSubs!==undefined) settings.focusSubs=data.focusSubs;
+    if(data.focusMechanisms!==undefined) settings.focusSubs=data.focusMechanisms;
+    if(data.focusTracker && data.focusTracker.mechanisms!==undefined){
+      settings.focusSubs=data.focusTracker.mechanisms;
+    }
+  }
+  const extractedMechanisms=sanitizeMechanisms(extractMechanismsArray(data));
+  const settingsMechanisms=sanitizeMechanisms(settings.mechanisms);
+  const fallbackMechanisms=deriveMechanismsFromRawEntries(entriesRaw);
+  settings.mechanisms=extractedMechanisms.length
+    ? extractedMechanisms
+    : (settingsMechanisms.length ? settingsMechanisms : fallbackMechanisms);
+  const normalized=entriesRaw.map(toInternalRecord).filter(Boolean);
+  if(!normalized.length) throw new Error();
+  return {entries:normalized,settings};
+}
+
+function importJSON(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    try{
+      const parsed=parseImportData(e.target.result);
+      if(!confirm(t('toast.replaceConfirm',{n:parsed.entries.length})))return;
+      importSettings(parsed.settings);
+      store.save(parsed.entries);
+      showToast(t('toast.imported',{n:parsed.entries.length}));
+      if(currentTab==='history') renderHistory();
+      if(currentTab==='stats') renderStats();
+    }catch{showToast(t('toast.invalidJSON'));}
+  };
+  reader.readAsText(file);event.target.value='';
+}
+
+function openImportPaste(){
+  const card=document.getElementById('importPasteCard');
+  if(!card) return;
+  card.classList.remove('hidden');
+}
+
+function closeImportPaste(){
+  const card=document.getElementById('importPasteCard');
+  const input=document.getElementById('importPasteText');
+  if(card) card.classList.add('hidden');
+  if(input) input.value='';
+}
+
+function importJSONFromPaste(){
+  const input=document.getElementById('importPasteText');
+  if(!input) return;
+  const raw=input.value.trim();
+  if(!raw){ showToast(t('toast.invalidJSON')); return; }
+  try{
+    const parsed=parseImportData(raw);
+    if(!confirm(t('toast.replaceConfirm',{n:parsed.entries.length})))return;
+    importSettings(parsed.settings);
+    store.save(parsed.entries);
+    closeImportPaste();
+    showToast(t('toast.imported',{n:parsed.entries.length}));
+    if(currentTab==='history') renderHistory();
+    if(currentTab==='stats') renderStats();
+  }catch{
+    showToast(t('toast.invalidJSON'));
+  }
+}
+
+/* ══ INIT ══ */
+window.addEventListener('load',()=>{
+  loadSettings();
+  buildCravingGrid();
+  buildGoalSubSelect();
+  refreshMechanismsEditor();
+  applyI18n();
+  refreshFocusTrackerSettingsUI();
+  renderStats();
+});
+</script>
+</body>
+</html>
