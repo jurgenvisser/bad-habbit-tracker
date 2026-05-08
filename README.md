@@ -1,6 +1,6 @@
 # Bad Habbit Tracker
 
-A privacy-first, single-file web app for logging coping behaviors and reviewing patterns over time.
+Single-file web app for logging coping behaviors and reviewing patterns over time.
 
 ## Tech Stack
 
@@ -19,7 +19,7 @@ Create a new event with:
 - Intensity (0-10)
 - Optional context note
 
-Important: if you select 3 mechanisms, the app stores **one event** containing a mechanisms array (not 3 separate log rows).
+If you select 3 mechanisms, the app stores **one event** with a `mechanisms` array (not 3 separate log rows).
 
 ### 2. Mechanism management
 In Settings you can:
@@ -32,7 +32,7 @@ In Settings you can choose:
 - Primary mechanism
 - Secondary mechanism (optional)
 
-The Focus Tracker card on the Stats page uses exactly these selections.
+The Focus Tracker card on the Stats page uses these selected mechanisms.
 
 ### 4. History
 - Timeline of logged events
@@ -85,7 +85,7 @@ Exports:
 
 ## Data Model
 
-## Event record (current format)
+### Event record (current format)
 - `id`
 - `dateTime`
 - `mechanisms`: array of objects
@@ -100,27 +100,19 @@ Exports:
 
 Compatibility fields are still handled for older backups.
 
-## Settings snapshot
+### Settings snapshot
 - `lang`
 - `mechanisms`
 - `focusSubs`
 - `focusTracker.mechanisms` (compatibility path)
 
-## Local Storage
+## Local Storage Keys
 
-The app stores data in browser `localStorage`:
 - `records`
 - `badhabbit_settings_v1`
 - `goals`
 
 Legacy key migration is included where possible.
-
-## Privacy
-
-- All data stays local in the browser profile by default
-- No server-side storage
-- No external database
-- If local browser storage is cleared, data is lost unless exported
 
 ## Run Locally
 
@@ -143,4 +135,3 @@ This app can be hosted on any static hosting provider:
 
 - `index.html`: complete app (UI, logic, storage, import/export)
 - `README.md`: project documentation
-
