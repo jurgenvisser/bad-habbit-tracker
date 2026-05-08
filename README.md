@@ -114,6 +114,13 @@ Compatibility fields are still handled for older backups.
 
 Legacy key migration is included where possible.
 
+## Privacy
+
+- All app data is stored on-device in your browser local storage
+- No backend server or external database is required for normal use
+- Data leaves the device only when you choose to export and share a file
+
+
 ## Run Locally
 
 Open `index.html` directly in a browser.
