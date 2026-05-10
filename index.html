@@ -5,9 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Dopamine Log">
   <meta name="theme-color" content="#080810">
-  <title>DopamineLog</title>
+  <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Bad Habits">
+  <meta name="application-name" content="Bad Habits">
+  <link rel="manifest" href="/site.webmanifest">
+  <title>Bad Habit Tracker</title>
   <style>
     :root {
       --accent:     #818cf8;
@@ -1620,7 +1626,8 @@ I18N.nl = {
   'locale': 'nl-NL',
 };
 
-const SETTINGS_KEY='badhabbit_settings_v1';
+const SETTINGS_KEY='badhabit_settings_v1';
+const LEGACY_SETTINGS_KEY='badha'+'bbit_settings_v1';
 let lang = localStorage.getItem('lang') || 'en';
 
 function t(key, vars) {
@@ -1797,7 +1804,12 @@ function saveSettings(){
 function loadSettings(){
   let raw={};
   try{
-    raw=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')||{};
+    const currentSettings=localStorage.getItem(SETTINGS_KEY);
+    const legacySettings=localStorage.getItem(LEGACY_SETTINGS_KEY);
+    raw=JSON.parse(currentSettings||legacySettings||'{}')||{};
+    if(!currentSettings && legacySettings){
+      localStorage.setItem(SETTINGS_KEY, legacySettings);
+    }
   }catch{
     raw={};
   }
@@ -3212,7 +3224,7 @@ function exportJSON(){
   const data=store.getAll();
   if(!data.length){showToast(t('toast.noData'));return;}
   const jsonStr=getShortcutBackupJSONString(true);
-  const filename=`badhabbitlog_backup_${timestampForFilename()}.json`;
+  const filename=`badhabitlog_backup_${timestampForFilename()}.json`;
   downloadTextFile(filename,jsonStr,'application/json;charset=utf-8');
   showToast(t('toast.jsonExported'));
 }
@@ -3230,7 +3242,7 @@ function exportCSV(){
     return headers.map(h=>`"${(row[h]??'').toString().replace(/"/g,'""')}"`).join(',');
   });
   const csv=[headers.join(','),...rows].join('\n');
-  const filename=`badhabbitlog_logs_${timestampForFilename()}.csv`;
+  const filename=`badhabitlog_logs_${timestampForFilename()}.csv`;
   downloadTextFile(filename,csv,'text/csv;charset=utf-8');
   showToast(t('toast.csvExported'));
 }

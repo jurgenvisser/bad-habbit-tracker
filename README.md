@@ -1,4 +1,4 @@
-# Bad Habbit Tracker
+# Bad Habit Tracker
 
 Single-file web app for logging coping behaviors and reviewing patterns over time.
 
@@ -109,7 +109,7 @@ Compatibility fields are still handled for older backups.
 ## Local Storage Keys
 
 - `records`
-- `badhabbit_settings_v1`
+- `badhabit_settings_v1`
 - `goals`
 
 Legacy key migration is included where possible.
